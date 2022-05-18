@@ -172,3 +172,9 @@ reportOptionalSubscript = false
 reportPrivateImportUsage = false
 reportUnboundVariable = false
 reportUnsupportedDunderAll = false
+
+[tool.conda-lock]
+channels = ['conda-forge', 'defaults']
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
