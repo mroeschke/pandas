@@ -174,7 +174,7 @@ reportUnboundVariable = false
 reportUnsupportedDunderAll = false
 
 [tool.conda-lock]
-channels = ['conda-forge', 'defaults']
+channels = ['conda-forge']
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
@@ -218,9 +218,61 @@ zstandard = { version = ">=0.15.2", optional = true }
 
 [tool.poetry.dev-dependencies]
 cython = "=0.29.24"
+# Local Build
+c-compiler = ">=1.4.2,<2"
+cxx-compiler = ">=1.4.2,<2"
+# Code checks
+pre-commit = ">=2.19.0,<3"
+mypy = "=0.950"
+# Testing (CI)
 pytest = ">=6.0,<7"
 pytest-cov = ">=3.0,<4"
 pytest-xdist = ">=2.5,<3"
 psutil = ">=5.9,<6"
 pytest-asyncio = ">=0.18,<1"
 boto3 = ">=1.23,<2"
+# Testing (Local)
+moto = ">=3.1.9,<4"
+flask = ">=2.1.2,<3"
+# Downstream Tests
+aiobotocore = ">=1.4.1,<2"
+botocore = ">=1.20.106,<2"
+cftime = ">=1.6.0,<2"
+dask = ">=2022.5.0"
+toolz = ">=0.11.2,<1"
+ipython = ">=8.3.0,<9"
+geopandas-base = ">=0.10.2,<1"
+seaborn = ">=0.11.2,<1"
+scikit-learn = ">=1.1.0,<2"
+statsmodels = ">=0.13.2,<1"
+coverage = ">=6.3.3,<1"
+pandas-datareader = ">=0.10.0,<1"
+pyyaml = ">=6.0,<7"
+py = ">=1.11.0,<2"
+pytorch = ">=1.7.1,<2"
+# ASV
+asv = ">=0.5.1,<0.6"
+# Documentation
+gitpython = ">=3.1,<4"
+numpydoc = ">=1.3,<2"
+pandas-dev-flaker = "=0.5.0"
+pydata-sphinx-theme = "=0.8.0"
+pytest-cython = ">=0.2,<1"
+sphinx = ">=4.5,<5"
+sphinx-panels = ">=0.6,<1"
+types-python-dateutil = ">=2.8.15,<3"
+types-PyMySQL = ">=1.0.19,<2"
+types-pytz = ">=2021.3.8"
+types-setuptools = ">=57.4.14,<60"
+nbconvert>=6.4.5 = ">=6.4.5,<7"
+nbsphinx = ">=0.8.8,<1"
+pandoc = ">=2.18,<3"
+ipywidgets = ">=7.7.0,<8"
+nbformat = ">=5.4.0,<6"
+notebook = ">=6.4.11,<7"
+ipykernel = ">=6.13.0,<7"
+natsort = ">=8.1.0,<9"
+# Website (jinja2, pyyaml required but included above)
+markdown = ">=3.3.7,<4"
+feedparser = ">=6.0.8,<7"
+requests = ">=2.27.1,<3"
