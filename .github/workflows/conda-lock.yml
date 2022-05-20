@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"' pyproject.toml
+          sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"/' pyproject.toml
           cat pyproject.toml
 
           template='conda-lock/{platform}-${{ matrix.python-version }}-dev.lock'
