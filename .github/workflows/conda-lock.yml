@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          template='conda-lock/{platform}-${{ matrix.python-version }}-dev.lock'
+          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --kind explicit \
             --file pyproject.toml \
@@ -66,13 +66,13 @@ jobs:
             --mamba
 
       - name: Test Linux Environment Creation with Lock File
-        run: mamba create --name test --file conda-lock/linux-64-${{ matrix.python-version }}-dev.lock
+        run: mamba create --name test --file conda-lock/linux-64-${{ matrix.python-version }}.lock
 
       - name: Upload Conda Lock files
         uses: actions/upload-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
-          path: conda-lock/*-${{ matrix.python-version }}-dev.lock
+          path: conda-lock/*-${{ matrix.python-version }}.lock
 
 #  condalock_pr:
 #    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
