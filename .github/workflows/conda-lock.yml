@@ -33,15 +33,15 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-#          mamba-version: "*"
-#          miniforge-version: latest
-#          miniforge-variant: Mambaforge
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
           activate-environment: conda-lock
           python-version: ${{ matrix.python-version }}
           condarc-file: ci/condarc
 
       - name: Install conda-lock
-        run: conda install 'conda-lock <1.0'
+        run: mamba install 'conda-lock <1.0'
 
       - name: Generate Lock Files
         run: |
@@ -58,9 +58,10 @@ jobs:
             --platform win-64 \
             --filename-template "${template}" \
             --dev-dependencies
+            --mamba
 
       - name: Test Linux Environment Creation with Lock File
-        run: conda create --name test --file conda-lock/linux-64-${{ matrix.python-version }}-dev.lock
+        run: mamba create --name test --file conda-lock/linux-64-${{ matrix.python-version }}-dev.lock
 
       - name: Upload Conda Lock files
         uses: actions/upload-artifact@v3
