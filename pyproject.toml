@@ -174,7 +174,7 @@ reportUnboundVariable = false
 reportUnsupportedDunderAll = false
 
 [tool.conda-lock]
-channels = ['conda-forge']
+channels = ['conda-forge', 'defaults']
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
@@ -235,7 +235,7 @@ moto = ">=3.1.9,<4"
 flask = ">=2.1.2,<3"
 # Downstream Tests
 aiobotocore = ">=1.4.1,<2"
-botocore = ">=1.20.106,<2"
+botocore = ">=1.26.3,<2"
 cftime = ">=1.6.0,<2"
 dask = ">=2022.5.0"
 toolz = ">=0.11.2,<1"
