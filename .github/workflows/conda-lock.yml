@@ -38,6 +38,10 @@ jobs:
           miniforge-variant: Mambaforge
           activate-environment: conda-lock
           python-version: ${{ matrix.python-version }}
+          remote_connect_timeout_secs: 30.0
+          remote_max_retries: 10
+          remote_backoff_factor: 2
+          remote_read_timeout_secs: 60.0
 
       - name: Install conda-lock
         run: mamba install 'conda-lock <1.0'
@@ -47,7 +51,6 @@ jobs:
           set -euo pipefail
 
           sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"/' pyproject.toml
-          cat pyproject.toml
 
           template='conda-lock/{platform}-${{ matrix.python-version }}-dev.lock'
           conda lock \
