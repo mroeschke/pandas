@@ -53,7 +53,7 @@ jobs:
       - name: Generate Lock Files
         run: |
           set -euo pipefail
-
+          mkdir -p conda-lock
           template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --kind explicit \
