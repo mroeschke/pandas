@@ -174,7 +174,8 @@ reportUnboundVariable = false
 reportUnsupportedDunderAll = false
 
 [tool.conda-lock]
-channels = ['conda-forge']
+# pytorch channel for pytorch on windows
+channels = ['conda-forge', 'pytorch']
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
