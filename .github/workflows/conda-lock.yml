@@ -66,7 +66,7 @@ jobs:
             --platform osx-64 \
             --platform win-64 \
             --filename-template "${template}" \
-            --dev-dependencies
+            --dev-dependencies \
             --mamba
 
       - name: Test Linux Environment Creation with Lock File
