@@ -93,7 +93,11 @@ jobs:
 
       # TODO: probably a way to do this with actions/github-script@v6 below
       - name: Git Commit Lock files
-        run: git add -A && git commit -m"Relock conda-lock files"
+        run: |
+          git config --global user.email "noreply@pandas-bot.com"
+          git config --global user.name "pandas bot"
+          git add -A
+          git commit -m"Relock conda-lock files"
 
       - name: Create Pull Request
         uses: actions/github-script@v6
