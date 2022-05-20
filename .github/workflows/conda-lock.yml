@@ -43,12 +43,20 @@ jobs:
       - name: Install conda-lock
         run: mamba install 'conda-lock <1.0'
 
+      - name: Modify pyproject.toml Dynamically for Lock File Generation
+        run: |
+          sed -i 's/requires = \[/requires = \["poetry-core>=1",/' pyproject.toml
+          sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"/' pyproject.toml
+          sed -i 's/^# build-backend = .*/build-backend = "poetry.core.masonry.api"/' pyproject.toml
+          cat pyproject.toml
+
       - name: Generate Lock Files
         run: |
           set -euo pipefail
 
+          # Modify pyproject.toml dynamically specifically for lock file generation
           sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"/' pyproject.toml
-
+          sed -i 's/^python = .*/python = "=${{ matrix.python-version }}"/' pyproject.toml
           template='conda-lock/{platform}-${{ matrix.python-version }}-dev.lock'
           conda lock \
             --kind explicit \
