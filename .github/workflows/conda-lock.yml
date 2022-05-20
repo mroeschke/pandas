@@ -74,6 +74,42 @@ jobs:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock/*-${{ matrix.python-version }}.lock
 
+  condalock_pr:
+    #if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    needs:
+      - condalock
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download Conda Lock Files
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock
+
+      - name: Create Pull Request
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const result = await github.rest.pulls.create({
+              title: '[CI/DEPS] Update Conda Lock Files',
+              owner,
+              repo,
+              head: '${{ github.ref_name }}',
+              base: 'main'
+            });
+            github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: result.data.number,
+              labels: ['CI', 'Dependencies']
+            });
+
 #  condalock_pr:
 #    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
 #    runs-on: ubuntu-latest
