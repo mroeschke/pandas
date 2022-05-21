@@ -74,6 +74,21 @@ jobs:
             --dev-dependencies \
             --mamba
 
+          # No ARM support for pytorch, pyreadstat, asv, google-cloud-bigquery-core
+          conda lock \
+            --kind explicit \
+            --file pyproject.toml \
+            --platform linux-aarch64 \
+            --filename-template "${template}" \
+            --extras optional_dependencies \
+            --extras code_checks \
+            --extras testing_ci \
+            --extras testing_local \
+            --extras docs \
+            --extras website \
+            --dev-dependencies \
+            --mamba
+
       - name: Generate PyPy Lock File
         run: |
           set -euo pipefail
