@@ -70,7 +70,7 @@ jobs:
             --extras asv \
             --extras docs \
             --extras website \
-            --filter-categories \
+            --filter-extras \
             --dev-dependencies \
             --mamba
 
@@ -81,21 +81,31 @@ jobs:
             --platform linux-aarch64 \
             --filename-template "${template}" \
             --extras testing_ci \
-            --filter-categories \
+            --filter-extras \
             --mamba
 
       - name: Generate PyPy Lock File
         run: |
           set -euo pipefail
-          mkdir -p conda-lock
+
+          # TODO: Way to set this is pyproject.toml?
+          python_version_file="$(mktemp --suffix=.yml)"
+          {
+            echo 'name: conda-lock'
+            echo 'dependencies:'
+            echo '  - python=${{ matrix.python-version }}[build=*_pypy]'
+          } > "${python_version_file}"
+
           template='conda-lock/pypy-{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --kind explicit \
-            --file ci/deps/actions-pypy-38.yaml \
+            --file pyproject.toml \
+            --file "${python_version_file}" \
             --platform linux-64 \
             --filename-template "${template}" \
+            --extras testing_ci \
+            --filter-extras \
             --mamba
-        if: ${{ matrix.python-version }} == '3.8'
 
       - name: Test Linux Environment Creation with Lock File
         run: mamba create --name test --file conda-lock/linux-64-${{ matrix.python-version }}.lock
