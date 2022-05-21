@@ -91,24 +91,25 @@ jobs:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock
 
-      # TODO: probably a way to do this with actions/github-script@v6 below
+      # TODO: Investigate if actions/github-script@v6 below can be used.
       - name: Git Commit Lock files
         run: |
-          git config --global user.email "noreply@pandas-bot.com"
-          git config --global user.name "pandas bot"
-          git add -A
+          git config --global user.email "conda-lock[bot]@users.noreply.github.com"
+          git config --global user.name "conda-lock[bot]"
+          git checkout -b create-pull-request/conda-relock
+          git add conda-lock/
           git commit -m"Relock conda-lock files"
+          git push origin HEAD
 
       - name: Create Pull Request
         uses: actions/github-script@v6
         with:
           script: |
-            const { repo, owner } = context.repo;
             const result = await github.rest.pulls.create({
               title: '[CI/DEPS] Update Conda Lock Files',
               owner,
               repo,
-              head: '${{ github.ref_name }}',
+              head: 'create-pull-request/conda-relock',
               base: 'main'
             });
             github.rest.issues.addLabels({
