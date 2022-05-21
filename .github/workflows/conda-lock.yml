@@ -71,6 +71,7 @@ jobs:
             --extras asv \
             --extras docs \
             --extras website \
+            --filter-extras \
             --dev-dependencies \
             --mamba
 
@@ -81,6 +82,7 @@ jobs:
             --platform linux-aarch64 \
             --filename-template "${template}" \
             --extras testing_ci \
+            --filter-extras \
             --mamba
 
       - name: Generate PyPy Lock File
@@ -95,6 +97,7 @@ jobs:
             --platform linux-64 \
             --filename-template "${template}" \
             --extras testing_ci \
+            --filter-extras \
             --mamba
 
       - name: Test Linux Environment Creation with Lock File
