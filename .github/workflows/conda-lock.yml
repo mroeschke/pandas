@@ -79,7 +79,7 @@ jobs:
           set -euo pipefail
           sed -i 's/^python = "=${{ matrix.python-version }}"/python = "=${{ matrix.python-version }}[build=*_pypy]"/' pyproject.toml
           mkdir -p conda-lock
-          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
+          template='conda-lock/{platform}-${{ matrix.python-version }}-pypy.lock'
           conda lock \
             --kind explicit \
             --file pyproject.toml \
