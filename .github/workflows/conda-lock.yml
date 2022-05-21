@@ -97,14 +97,15 @@ jobs:
           git config --global user.email "conda-lock[bot]@users.noreply.github.com"
           git config --global user.name "conda-lock[bot]"
           git checkout -b create-pull-request/conda-relock
-          git add conda-lock/
+          git add conda-lock/*.lock
           git commit -m"Relock conda-lock files"
-          git push origin HEAD
+          git push origin create-pull-request/conda-relock
 
       - name: Create Pull Request
         uses: actions/github-script@v6
         with:
           script: |
+            const { repo, owner } = context.repo;
             const result = await github.rest.pulls.create({
               title: '[CI/DEPS] Update Conda Lock Files',
               owner,
