@@ -87,9 +87,9 @@ jobs:
       - name: Generate PyPy Lock File
         run: |
           set -euo pipefail
-          sed -i 's/^python = "=${{ matrix.python-version }}"/python = "=${{ matrix.python-version }}[build=*_pypy]"/' pyproject.toml
+          sed -i 's/^python = "=${{ matrix.python-version }}"/python = { version = "=${{ matrix.python-version }}", markers = "platform_python_implementation == 'PyPy' "}/' pyproject.toml
           mkdir -p conda-lock
-          template='conda-lock/{platform}-${{ matrix.python-version }}-pypy.lock'
+          template='conda-lock/pypy-{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --kind explicit \
             --file pyproject.toml \
