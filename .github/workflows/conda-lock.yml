@@ -87,17 +87,15 @@ jobs:
       - name: Generate PyPy Lock File
         run: |
           set -euo pipefail
-          sed -i 's/^python = "=${{ matrix.python-version }}"/python = { version = "=${{ matrix.python-version }}", markers = "platform_python_implementation == 'PyPy' "}/' pyproject.toml
           mkdir -p conda-lock
           template='conda-lock/pypy-{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --kind explicit \
-            --file pyproject.toml \
+            --file ci/deps/actions-pypy-38.yaml \
             --platform linux-64 \
             --filename-template "${template}" \
-            --extras testing_ci \
-            --filter-categories \
             --mamba
+        if: ${{ matrix.python-version }} == '3.8'
 
       - name: Test Linux Environment Creation with Lock File
         run: mamba create --name test --file conda-lock/linux-64-${{ matrix.python-version }}.lock
