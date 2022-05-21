@@ -61,7 +61,6 @@ jobs:
             --platform linux-64 \
             --platform osx-64 \
             --platform win-64 \
-            --platform linux-aarch64 \
             --filename-template "${template}" \
             --extras optional_dependencies \
             --extras code_checks \
