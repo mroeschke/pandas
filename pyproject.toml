@@ -183,7 +183,7 @@ python-dateutil = ">=2.8.1,<3"
 numpy = ">=1.18.5,<2"
 pytz = ">=2020.1"
 beautifulsoup4 = { version = ">=4.9.3,<5" , optional = true }
-blosc = { version = ">=1.21.0,<2" , optional = true }
+blosc = { version = ">=1.10.2,<2" , optional = true }
 bottleneck = { version = ">=1.3.2,<2" , optional = true }
 brotlipy = { version = ">=0.7.0,<1" , optional = true }
 fastparquet = { version = ">=0.4.0,<1" , optional = true }
