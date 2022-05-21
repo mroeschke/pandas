@@ -61,8 +61,31 @@ jobs:
             --platform linux-64 \
             --platform osx-64 \
             --platform win-64 \
+            --platform linux-aarch64 \
             --filename-template "${template}" \
+            --extras optional_dependencies \
+            --extras code_checks \
+            --extras testing_ci \
+            --extras testing_local \
+            --extras downsteam_tests \
+            --extras asv \
+            --extras docs \
+            --extras website \
             --dev-dependencies \
+            --mamba
+
+      - name: Generate PyPy Lock File
+        run: |
+          set -euo pipefail
+          sed -i 's/^python = "=${{ matrix.python-version }}"/python = "=${{ matrix.python-version }}[build=*_pypy]"/' pyproject.toml
+          mkdir -p conda-lock
+          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
+          conda lock \
+            --kind explicit \
+            --file pyproject.toml \
+            --platform linux-64 \
+            --filename-template "${template}" \
+            --extras testing_ci \
             --mamba
 
       - name: Test Linux Environment Creation with Lock File
