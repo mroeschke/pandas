@@ -42,7 +42,7 @@ jobs:
           condarc-file: ci/condarc
 
       - name: Install conda-lock
-        run: mamba install 'conda-lock <1.0'
+        run: mamba install conda-lock
 
       - name: Modify pyproject.toml Dynamically for Lock File Generation
         run: |
