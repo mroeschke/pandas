@@ -99,6 +99,7 @@ jobs:
             echo '    - "numpy"'
             echo '    - "scipy"'
           } > "${dev_deps_file}"
+          cat $dev_deps_file
           conda lock \
             --kind explicit \
             --file pyproject.toml \
