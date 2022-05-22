@@ -11,7 +11,7 @@ on:
       - 1.4.x
 
 env:
-  ENV_FILE: environment.yml
+  ENV_FILE: conda-lock/linux-64-3.10.lock
   PANDAS_CI: 1
 
 jobs:
