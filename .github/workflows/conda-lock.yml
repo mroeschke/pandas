@@ -84,6 +84,31 @@ jobs:
             --filter-extras \
             --mamba
 
+          # Latest Cython, Numpy & Scipy
+          template='conda-lock/numpy-dev-{platform}-${{ matrix.python-version }}.lock'
+          python_version_file="$(mktemp --suffix=.yml)"
+          {
+            echo 'name: conda-lock'
+            echo 'dependencies:'
+            echo '  - pip'
+            echo '  - pip:'
+            echo '    #- cython # TODO: don't install from master after Cython 3.0.0a11 is released'
+            echo '    - "git+https://github.com/cython/cython.git@master"'
+            echo '    - "--extra-index-url https://pypi.anaconda.org/scipy-wheels-nightly/simple"'
+            echo '    - "--pre"'
+            echo '    - "numpy"'
+            echo '    - "scipy"'
+          } > "${python_version_file}"
+          conda lock \
+            --kind explicit \
+            --file pyproject.toml \
+            --file "${python_version_file}" \
+            --platform linux-64 \
+            --filename-template "${template}" \
+            --extras testing_ci \
+            --filter-extras \
+            --mamba
+
       - name: Generate PyPy Lock File
         run: |
           set -euo pipefail
