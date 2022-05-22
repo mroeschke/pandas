@@ -159,6 +159,18 @@ jobs:
       run: conda install -n pandas-dev -c conda-forge --no-update-deps pyarrow=${{ matrix.pyarrow_version }}
       if: ${{ matrix.pyarrow_version }}
 
+    # TODO: don't install from master after Cython 3.0.0a11 is released
+    - name: Install Cython/Numpy/Scipy dev packages
+      run: |
+        conda install -n pandas-dev -c conda-forge pip
+        pip install \
+          git+https://github.com/cython/cython.git@master \
+          --extra-index-url https://pypi.anaconda.org/scipy-wheels-nightly/simple \
+          --pre \
+          numpy \
+          scipy
+      if: ${{ matrix.name == "Numpy Dev" }}
+
     - name: Build Pandas
       uses: ./.github/actions/build_pandas
 
