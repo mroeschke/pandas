@@ -86,20 +86,6 @@ jobs:
 
           # Latest Cython, Numpy & Scipy
           # TODO: don't install from master after Cython 3.0.0a11 is released'
-          template='conda-lock/numpy-dev-{platform}-${{ matrix.python-version }}.lock'
-          dev_deps_file="$(mktemp --suffix=.yml)"
-          {
-            echo 'name: conda-lock'
-            echo 'dependencies:'
-            echo '  - pip'
-            echo '  - pip:'
-            echo '    - "git+https://github.com/cython/cython.git@master"'
-            echo '    - "--extra-index-url https://pypi.anaconda.org/scipy-wheels-nightly/simple"'
-            echo '    - "--pre"'
-            echo '    - "numpy"'
-            echo '    - "scipy"'
-          } > "${dev_deps_file}"
-          cat $dev_deps_file
           conda lock \
             --kind explicit \
             --file ci/deps/actions-310-numpydev.yaml \
