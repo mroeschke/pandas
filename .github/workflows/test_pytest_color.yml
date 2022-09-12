@@ -28,4 +28,4 @@ jobs:
           python -m pip install pytest pytest-xdist
 
       - name: Test Color Fail
-        run: pytest tmp/test_fail.py
+        run: pytest tmp
