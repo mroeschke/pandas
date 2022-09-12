@@ -24,4 +24,4 @@ jobs:
           python -m pip install pytest
 
       - name: Test Color Fail
-        run: pytest pandas/tests/test_color_failure.py
+        run: pytest pandas/tests/test_fail.py
