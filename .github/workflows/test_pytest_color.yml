@@ -25,7 +25,7 @@ jobs:
       - name: Install Pytest
         run: |
           python --version
-          python -m pip install pytest
+          python -m pip install pytest pytest-xdist
 
       - name: Test Color Fail
         run: pytest tmp/test_fail.py

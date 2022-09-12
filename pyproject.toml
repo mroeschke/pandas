@@ -33,7 +33,7 @@ exclude = '''
 
 [tool.pytest.ini_options]
 # sync minversion with pyproject.toml & install.rst
-addopts = "--color=yes"
+addopts = "--color=yes -n 2 --dist=loadfile"
 
 [tool.mypy]
 # Import discovery
