@@ -1,0 +1,27 @@
+name: Python Dev
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  PY_COLOR: "1"
+
+jobs:
+  check-pytest-color:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python Dev Version
+        uses: actions/setup-python@v4
+
+      - name: Install Pytest
+        run: |
+          python --version
+          python -m pip install pytest
+
+      - name: Test Color Fail
+        run: pytest tmp/test_color_failure.py
