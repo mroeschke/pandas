@@ -202,6 +202,8 @@ class TestDataFrameColor(TestPlotBase):
         assert ax.collections[0].colorbar is None
 
     def test_scatter_colors(self):
+        from matplotlib import colors
+
         df = DataFrame({"a": [1, 2, 3], "b": [1, 2, 3], "c": [1, 2, 3]})
         with pytest.raises(TypeError, match="Specify exactly one of `c` and `color`"):
             df.plot.scatter(x="a", y="b", c="c", color="green")
@@ -211,7 +213,7 @@ class TestDataFrameColor(TestPlotBase):
         ax = df.plot.scatter(x="a", y="b", c="c")
         tm.assert_numpy_array_equal(
             ax.collections[0].get_facecolor()[0],
-            np.array(self.colorconverter.to_rgba(default_colors[0])),
+            np.array(colors.colorConverter.to_rgba(default_colors[0])),
         )
 
         ax = df.plot.scatter(x="a", y="b", color="white")

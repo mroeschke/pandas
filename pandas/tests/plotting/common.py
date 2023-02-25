@@ -36,19 +36,16 @@ class TestPlotBase:
         mpl.rcdefaults()
 
     def teardown_method(self):
-        tm.close()
+        self.plt.clf()
+        self.plt.cla()
+        self.plt.close("all")
+        self.plt.rcdefaults()
 
     @cache_readonly
     def plt(self):
         import matplotlib.pyplot as plt
 
         return plt
-
-    @cache_readonly
-    def colorconverter(self):
-        from matplotlib import colors
-
-        return colors.colorConverter
 
     def _check_legend_labels(self, axes, labels=None, visible=True):
         """
@@ -177,6 +174,7 @@ class TestPlotBase:
             Series used for color grouping key
             used for andrew_curves, parallel_coordinates, radviz test
         """
+        from matplotlib import colors
         from matplotlib.collections import (
             Collection,
             LineCollection,
@@ -184,7 +182,7 @@ class TestPlotBase:
         )
         from matplotlib.lines import Line2D
 
-        conv = self.colorconverter
+        conv = colors.colorConverter
         if linecolors is not None:
             if mapping is not None:
                 linecolors = self._get_colors_mapped(mapping, linecolors)
