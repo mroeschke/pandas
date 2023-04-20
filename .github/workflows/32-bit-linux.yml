@@ -36,6 +36,7 @@ jobs:
     steps:
       - name: Build environment
         run: |
+          cd pandas && \
           /opt/python/cp38-cp38/bin/python -m venv ~/virtualenvs/pandas-dev && \
           . ~/virtualenvs/pandas-dev/bin/activate && \
           python -m pip install --no-deps -U pip wheel setuptools && \
