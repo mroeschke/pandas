@@ -23,7 +23,7 @@ jobs:
       env:
         PANDAS_CI: 1
       volumes:
-        ${{ github.workspace }}:/pandas
+        - ${{ github.workspace }}:/pandas
       options: --platform linux/386
     steps:
       - name: Checkout
