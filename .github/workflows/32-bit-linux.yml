@@ -43,12 +43,12 @@ jobs:
           python -m pip install --no-cache-dir --no-deps -U pip wheel setuptools
           python -m pip install --no-cache-dir versioneer[toml] cython numpy python-dateutil pytz pytest>=7.0.0 pytest-xdist>=2.2.0 pytest-asyncio>=0.17 hypothesis>=6.46.1
           python setup.py build_ext -q -j$(nproc)
-          python -m pip install --no-build-isolation --no-use-pep517 -e .
+          python -m pip install --no-cache-dir --no-build-isolation --no-use-pep517 -e .
           python -m pip list
       - name: Run Tests
         run: |
           export PANDAS_CI=1
-          pytest -m 'not slow and not network and not clipboard and not single_cpu' pandas --junitxml=test-data.xml
+          python -m pytest -m 'not slow and not network and not clipboard and not single_cpu' pandas --junitxml=test-data.xml
       # - name: Run 32-bit manylinux2014 Docker Build / Tests
       #   run: |
       #     # Without this (line 34), versioneer will not be able to determine the pandas version.
