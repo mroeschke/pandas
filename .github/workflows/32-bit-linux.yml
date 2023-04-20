@@ -20,8 +20,6 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: quay.io/pypa/manylinux2014_i686
-      env:
-        PANDAS_CI: 1
       options: --platform linux/386
     steps:
       - name: Checkout pandas Repo
@@ -48,7 +46,9 @@ jobs:
           python -m pip install --no-build-isolation --no-use-pep517 -e .
           python -m pip list
       - name: Run Tests
-        run: pytest -m 'not slow and not network and not clipboard and not single_cpu' pandas --junitxml=test-data.xml
+        run: |
+          export PANDAS_CI=1
+          pytest -m 'not slow and not network and not clipboard and not single_cpu' pandas --junitxml=test-data.xml
       # - name: Run 32-bit manylinux2014 Docker Build / Tests
       #   run: |
       #     # Without this (line 34), versioneer will not be able to determine the pandas version.
