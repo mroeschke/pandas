@@ -26,6 +26,8 @@ runs:
 
     - name: Cat ci condarc
       run: cat ci/condarc.yml
+      shell: bash -el {0}
 
     - name: Cat condarc
       run: cat .condarc
+      shell: bash -el {0}
