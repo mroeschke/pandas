@@ -29,5 +29,5 @@ runs:
       shell: bash -el {0}
 
     - name: Cat condarc
-      run: cat .condarc
+      run: cat ~/.condarc
       shell: bash -el {0}
