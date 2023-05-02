@@ -23,3 +23,9 @@ runs:
         condarc-file: ci/condarc.yml
         cache-env: true
         cache-downloads: true
+
+    - name: Cat ci condarc
+      run: cat ci/condarc.yml
+
+    - name: Cat condarc
+      run: cat .condarc
