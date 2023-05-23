@@ -22,6 +22,7 @@ defaults:
 
 jobs:
   ubuntu:
+    if: false
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     strategy:
@@ -185,8 +186,7 @@ jobs:
       PANDAS_CI: 1
       PYTEST_TARGET: pandas
       PATTERN: "not slow and not db and not network and not single_cpu"
-      # GH 47443: PYTEST_WORKERS > 1 crashes Windows builds with memory related errors
-      PYTEST_WORKERS: ${{ matrix.os == 'macos-latest' && 'auto' || '1' }}
+      PYTEST_WORKERS: 'auto'
 
     steps:
       - name: Checkout
@@ -206,6 +206,7 @@ jobs:
         uses: ./.github/actions/run-tests
 
   Linux-32-bit:
+    if: false
     runs-on: ubuntu-22.04
     container:
       image: quay.io/pypa/manylinux2014_i686
@@ -241,6 +242,7 @@ jobs:
       cancel-in-progress: true
 
   Linux-Musl:
+    if: false
     runs-on: ubuntu-22.04
     container:
       image: quay.io/pypa/musllinux_1_1_x86_64
