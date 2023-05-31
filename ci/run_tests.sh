@@ -20,7 +20,7 @@ if [[ $(uname) == "Linux" && -z $DISPLAY ]]; then
     XVFB="xvfb-run "
 fi
 
-PYTEST_CMD="MESONPY_EDITABLE_VERBOSE=1 ${XVFB}pytest -v -r fEs -n $PYTEST_WORKERS --dist=loadfile $TEST_ARGS $COVERAGE pandas/test/api/ pandas/tests/apply/ pandas/tests/arithmetic/ pandas/tests/arrays/ pandas/tests/base/ pandas/tests/computation/ pandas/tests/config pandas/tests/construction pandas/tests/copy_view pandas/tests/dtypes pandas/tests/extension pandas/tests/frame pandas/tests/generic pandas/tests/groupby pandas/tests/indexes pandas/tests/indexing"
+PYTEST_CMD="MESONPY_EDITABLE_VERBOSE=1 ${XVFB}pytest -v -r fEs -n $PYTEST_WORKERS --dist=loadfile $TEST_ARGS $COVERAGE pandas/test/api/ pandas/tests/apply/ pandas/tests/arithmetic/ pandas/tests/arrays/ pandas/tests/base/ pandas/tests/computation/ pandas/tests/config pandas/tests/construction pandas/tests/copy_view pandas/tests/dtypes pandas/tests/extension pandas/tests/frame pandas/tests/generic pandas/tests/groupby pandas/tests/indexes"
 
 if [[ "$PATTERN" ]]; then
   PYTEST_CMD="$PYTEST_CMD -m \"$PATTERN\""
