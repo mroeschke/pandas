@@ -1,3 +1,5 @@
+import gc
+
 import numpy as np
 import pytest
 
@@ -28,6 +30,7 @@ def close_all_figures():
     plt.cla()
     plt.clf()
     plt.close("all")
+    gc.collect()
 
 
 @pytest.fixture
