@@ -34,6 +34,10 @@ cdef class CachedProperty:
             val = <object>PyDict_GetItem(cache, self.name)
         else:
             val = self.fget(obj)
+            if obj is val:
+                raise ValueError(
+                    "Caching will cause a circular reference. Cache a copy instead."
+                    )
             PyDict_SetItem(cache, self.name, val)
         return val
 
