@@ -25,6 +25,7 @@ def reset_rcParams():
 
 @pytest.fixture(autouse=True)
 def close_all_figures():
+    # https://stackoverflow.com/q/31156578
     yield
     plt = pytest.importorskip("matplotlib.pyplot")
     plt.cla()
