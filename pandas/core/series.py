@@ -1359,6 +1359,11 @@ class Series(base.IndexOpsMixin, NDFrame):  # type: ignore[misc]
             return
         self._cacher = (item, weakref.ref(cacher))
 
+    def __del__(self):
+        if hasattr(self, "_cacher"):
+            self._cacher = None
+        super().__del__()
+
     def _clear_item_cache(self) -> None:
         # no-op for Series
         pass

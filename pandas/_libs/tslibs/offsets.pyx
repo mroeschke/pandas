@@ -404,6 +404,9 @@ cdef class BaseOffset:
         self.normalize = normalize
         self._cache = {}
 
+    def __del__(self):
+        self._cache.clear()
+
     def __eq__(self, other) -> bool:
         if isinstance(other, str):
             try:

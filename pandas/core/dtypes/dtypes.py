@@ -136,6 +136,9 @@ class PandasExtensionDtype(ExtensionDtype):
         """clear the cache"""
         cls._cache_dtypes = {}
 
+    def __del__(self):
+        self._cache_dtypes.clear()
+
 
 class CategoricalDtypeType(type):
     """

@@ -128,6 +128,9 @@ class PandasObject(DirNamesMixin):
         else:
             self._cache.pop(key, None)
 
+    def __del__(self):
+        self._reset_cache()
+
     def __sizeof__(self) -> int:
         """
         Generates the total memory usage for an object that returns

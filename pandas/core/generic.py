@@ -3950,6 +3950,10 @@ class NDFrame(PandasObject, indexing.IndexingMixin):
     def _clear_item_cache(self) -> None:
         raise AbstractMethodError(self)
 
+    def __del__(self):
+        self._maybe_update_cacher(clear=True)
+        super().__del__()
+
     # ----------------------------------------------------------------------
     # Indexing Methods
 
