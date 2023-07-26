@@ -94,7 +94,7 @@ jobs:
       PANDAS_COPY_ON_WRITE: ${{ matrix.pandas_copy_on_write || '0' }}
       PANDAS_CI: ${{ matrix.pandas_ci || '1' }}
       TEST_ARGS: ${{ matrix.test_args || '' }}
-      PYTEST_WORKERS: 'auto'
+      PYTEST_WORKERS: 0
       PYTEST_TARGET: ${{ matrix.pytest_target || 'pandas' }}
     concurrency:
       # https://github.community/t/concurrecy-not-work-for-push/183068/7
@@ -195,7 +195,7 @@ jobs:
       PYTEST_TARGET: pandas
       PATTERN: "not slow and not db and not network and not single_cpu"
       # GH 47443: PYTEST_WORKERS > 0 crashes Windows builds with memory related errors
-      PYTEST_WORKERS: ${{ matrix.os == 'macos-latest' && 'auto' || '0' }}
+      PYTEST_WORKERS: 0
 
     steps:
       - name: Checkout
@@ -330,7 +330,7 @@ jobs:
       cancel-in-progress: true
 
     env:
-      PYTEST_WORKERS: "auto"
+      PYTEST_WORKERS: 0
       PANDAS_CI: 1
       PATTERN: "not slow and not network and not clipboard and not single_cpu"
       COVERAGE: true
