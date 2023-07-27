@@ -1,9 +1,8 @@
 name: pandas-dev
 channels:
-  - "conda-forge/label/python_rc"
   - conda-forge
 dependencies:
-  - python=3.11
+  - conda-forge/label/python_debug::python=3.11
 
   # build dependencies
   - versioneer[toml]
