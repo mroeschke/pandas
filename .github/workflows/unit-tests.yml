@@ -23,7 +23,6 @@ defaults:
 jobs:
   ubuntu:
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
     strategy:
       matrix:
         env_file: [actions-39.yaml, actions-310.yaml, actions-311.yaml]

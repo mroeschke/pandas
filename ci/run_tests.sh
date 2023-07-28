@@ -10,7 +10,7 @@ echo PYTHONHASHSEED=$PYTHONHASHSEED
 
 COVERAGE="-s --cov=pandas --cov-report=xml --cov-append --cov-config=pyproject.toml"
 
-PYTEST_CMD="MESONPY_EDITABLE_VERBOSE=1 pytest -v --setup-show -r fEs -n $PYTEST_WORKERS --dist=loadfile $TEST_ARGS $COVERAGE $PYTEST_TARGET"
+PYTEST_CMD="MESONPY_EDITABLE_VERBOSE=1 pytest -v -r fEs -n $PYTEST_WORKERS --dist=loadfile $TEST_ARGS $COVERAGE $PYTEST_TARGET"
 
 if [[ "$PATTERN" ]]; then
   PYTEST_CMD="$PYTEST_CMD -m \"$PATTERN\""
