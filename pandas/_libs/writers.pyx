@@ -2,6 +2,7 @@ cimport cython
 import numpy as np
 
 from cpython cimport (
+    Py_ssize_t,
     PyBytes_GET_SIZE,
     PyUnicode_GET_LENGTH,
 )
