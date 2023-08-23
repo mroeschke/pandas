@@ -24,7 +24,7 @@ tempita = files('generate_pxi.py')
 versioneer = files('generate_version.py')
 
 # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#warnings
-add_project_arguments('-Wextra --directive warn.undeclared=True --directive warn.maybe_uninitialized=True --directive warn.maybe_uninitialized=True --directive warn.unused=True --directive warn.unused_arg=True --directive warn.unused_result=True', language : 'cython')
+add_project_arguments('-X warn.undeclared=True warn.maybe_uninitialized=True warn.maybe_uninitialized=True warn.unused=True warn.unused_arg=True warn.unused_result=True', language : 'cython')
 
 add_project_arguments('-DNPY_NO_DEPRECATED_API=0', language : 'c')
 add_project_arguments('-DNPY_NO_DEPRECATED_API=0', language : 'cpp')
