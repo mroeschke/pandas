@@ -511,7 +511,6 @@ class TestDataFrameIndexing:
             float_frame.loc[:, None], float_frame["A"], check_names=False
         )
         tm.assert_series_equal(float_frame[None], float_frame["A"], check_names=False)
-        repr(float_frame)
 
     def test_loc_setitem_boolean_mask_allfalse(self):
         # GH 9596
@@ -748,11 +747,11 @@ class TestDataFrameIndexing:
         expected = df.iloc[0:2]
         tm.assert_frame_equal(result, expected)
 
-        df.loc[1:2] = 0
+        expected = df.iloc[0:2]
         msg = r"The behavior of obj\[i:j\] with a float-dtype index"
         with tm.assert_produces_warning(FutureWarning, match=msg):
             result = df[1:2]
-        assert (result == 0).all().all()
+        tm.assert_frame_equal(result, expected)
 
         # #2727
         index = Index([1.0, 2.5, 3.5, 4.5, 5.0])
