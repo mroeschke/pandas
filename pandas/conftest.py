@@ -50,6 +50,7 @@ from pytz import (
 
 from pandas._config.config import _get_option
 
+from pandas.compat import is_ci_environment
 import pandas.util._test_decorators as td
 
 from pandas.core.dtypes.dtypes import (
@@ -196,6 +197,19 @@ def pytest_collection_modifyitems(items, config) -> None:
 
             for path, message in ignored_doctest_warnings:
                 ignore_doctest_warning(item, path, message)
+
+    elif is_ci_environment() and int(os.getenv("PYTEST_XDIST_WORKER_COUNT", "0")) > 1:
+        # Reorder slower tests first for performance
+        def sort_key(item):
+            if "/plotting/" in item.nodeid:
+                return True
+            elif "/io/" in item.nodeid:
+                return True
+            elif any(marker.name == "slow" for marker in item.own_markers):
+                return True
+            return False
+
+        items[:] = sorted(items, key=sort_key, reverse=True)
 
 
 hypothesis_health_checks = [hypothesis.HealthCheck.too_slow]
