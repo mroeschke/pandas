@@ -200,6 +200,10 @@ def pytest_collection_modifyitems(items, config) -> None:
 
     elif is_ci_environment() and int(os.getenv("PYTEST_XDIST_WORKER_COUNT", "0")) > 1:
         # Reorder slower tests first for performance
+        import logging
+
+        logging.error("REORDERING TESTS")
+
         def sort_key(item):
             if "/plotting/" in item.nodeid:
                 return True
