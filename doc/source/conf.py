@@ -132,6 +132,7 @@ autodoc_typehints = "none"
 numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
 numpydoc_attributes_as_param_list = False
+numpydoc_validation_checks = {"GL01"}
 
 # matplotlib plot directive
 plot_include_source = True
