@@ -29,7 +29,7 @@ Bug fixes
 
 Other
 ~~~~~
--
+- The minimum SQLAlchemy version has been lowered to ``1.4.46`` instead of ``2.0.0`` (:issue:`57049`)
 
 .. ---------------------------------------------------------------------------
 .. _whatsnew_221.contributors:
