@@ -99,14 +99,17 @@ def iris_table_metadata():
     import sqlalchemy
     from sqlalchemy import (
         Column,
-        Double,
-        Float,
         MetaData,
         String,
         Table,
     )
 
-    dtype = Double if Version(sqlalchemy.__version__) >= Version("2.0.0") else Float
+    if Version(sqlalchemy.__version__) >= Version("2.0.0"):
+        from sqlalchemy import Double as float_type
+    else:
+        from sqlalchemy import Float as float_type
+
+    dtype = float_type
     metadata = MetaData()
     iris = Table(
         "iris",
