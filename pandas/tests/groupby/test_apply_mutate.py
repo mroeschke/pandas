@@ -75,7 +75,7 @@ def test_no_mutate_but_looks_like():
     tm.assert_series_equal(result1, result2)
 
 
-def test_apply_function_with_indexing(warn_copy_on_write):
+def test_apply_function_with_indexing():
     # GH: 33058
     df = pd.DataFrame(
         {"col1": ["A", "A", "A", "B", "B", "B"], "col2": [1, 2, 3, 4, 5, 6]}
@@ -86,15 +86,11 @@ def test_apply_function_with_indexing(warn_copy_on_write):
         return x.col2
 
     msg = "DataFrameGroupBy.apply operated on the grouping columns"
-    with tm.assert_produces_warning(
-        DeprecationWarning, match=msg, raise_on_extra_warnings=not warn_copy_on_write
-    ):
+    with tm.assert_produces_warning(DeprecationWarning, match=msg):
         result = df.groupby(["col1"], as_index=False).apply(fn)
     expected = pd.Series(
         [1, 2, 0, 4, 5, 0],
-        index=pd.MultiIndex.from_tuples(
-            [(0, 0), (0, 1), (0, 2), (1, 3), (1, 4), (1, 5)]
-        ),
+        index=range(6),
         name="col2",
     )
     tm.assert_series_equal(result, expected)

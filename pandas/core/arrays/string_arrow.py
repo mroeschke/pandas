@@ -9,9 +9,10 @@ from typing import (
     Union,
     cast,
 )
-import warnings
 
 import numpy as np
+
+from pandas._config.config import get_option
 
 from pandas._libs import (
     lib,
@@ -21,7 +22,6 @@ from pandas.compat import (
     pa_version_under10p1,
     pa_version_under13p0,
 )
-from pandas.util._exceptions import find_stack_level
 
 from pandas.core.dtypes.common import (
     is_bool_dtype,
@@ -64,6 +64,8 @@ if TYPE_CHECKING:
         npt,
     )
 
+    from pandas.core.dtypes.dtypes import ExtensionDtype
+
     from pandas import Series
 
 
@@ -105,7 +107,7 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
 
     See Also
     --------
-    :func:`pandas.array`
+    :func:`array`
         The recommended function for creating a ArrowStringArray.
     Series.str
         The string methods are available on Series backed by
@@ -117,7 +119,7 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
 
     Examples
     --------
-    >>> pd.array(['This is', 'some text', None, 'data.'], dtype="string[pyarrow]")
+    >>> pd.array(["This is", "some text", None, "data."], dtype="string[pyarrow]")
     <ArrowStringArray>
     ['This is', 'some text', <NA>, 'data.']
     Length: 4, dtype: string
@@ -194,17 +196,17 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             na_values = scalars._mask
             result = scalars._data
             result = lib.ensure_string_array(result, copy=copy, convert_na_value=False)
-            return cls(pa.array(result, mask=na_values, type=pa.string()))
+            return cls(pa.array(result, mask=na_values, type=pa.large_string()))
         elif isinstance(scalars, (pa.Array, pa.ChunkedArray)):
-            return cls(pc.cast(scalars, pa.string()))
+            return cls(pc.cast(scalars, pa.large_string()))
 
         # convert non-na-likes to str
         result = lib.ensure_string_array(scalars, copy=copy)
-        return cls(pa.array(result, type=pa.string(), from_pandas=True))
+        return cls(pa.array(result, type=pa.large_string(), from_pandas=True))
 
     @classmethod
     def _from_sequence_of_strings(
-        cls, strings, dtype: Dtype | None = None, copy: bool = False
+        cls, strings, *, dtype: ExtensionDtype, copy: bool = False
     ) -> Self:
         return cls._from_sequence(strings, dtype=dtype, copy=copy)
 
@@ -243,7 +245,7 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
         value_set = [
             pa_scalar.as_py()
             for pa_scalar in [pa.scalar(value, from_pandas=True) for value in values]
-            if pa_scalar.type in (pa.string(), pa.null())
+            if pa_scalar.type in (pa.string(), pa.null(), pa.large_string())
         ]
 
         # short-circuit to return all False array.
@@ -271,17 +273,6 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             return self.to_numpy(dtype=dtype, na_value=np.nan)
 
         return super().astype(dtype, copy=copy)
-
-    @property
-    def _data(self):
-        # dask accesses ._data directlys
-        warnings.warn(
-            f"{type(self).__name__}._data is a deprecated and will be removed "
-            "in a future version, use ._pa_array instead",
-            FutureWarning,
-            stacklevel=find_stack_level(),
-        )
-        return self._pa_array
 
     # ------------------------------------------------------------------------
     # String methods interface
@@ -341,7 +332,9 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             result = lib.map_infer_mask(
                 arr, f, mask.view("uint8"), convert=False, na_value=na_value
             )
-            result = pa.array(result, mask=mask, type=pa.string(), from_pandas=True)
+            result = pa.array(
+                result, mask=mask, type=pa.large_string(), from_pandas=True
+            )
             return type(self)(result)
         else:
             # This is when the result type is object. We reach this when
@@ -354,7 +347,8 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
         self, pat, case: bool = True, flags: int = 0, na=np.nan, regex: bool = True
     ):
         if flags:
-            fallback_performancewarning()
+            if get_option("mode.performance_warnings"):
+                fallback_performancewarning()
             return super()._str_contains(pat, case, flags, na, regex)
 
         if regex:
@@ -414,7 +408,8 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
         regex: bool = True,
     ):
         if isinstance(pat, re.Pattern) or callable(repl) or not case or flags:
-            fallback_performancewarning()
+            if get_option("mode.performance_warnings"):
+                fallback_performancewarning()
             return super()._str_replace(pat, repl, n, case, flags, regex)
 
         func = pc.replace_substring_regex if regex else pc.replace_substring
@@ -662,7 +657,9 @@ class ArrowStringArrayNumpySemantics(ArrowStringArray):
             result = lib.map_infer_mask(
                 arr, f, mask.view("uint8"), convert=False, na_value=na_value
             )
-            result = pa.array(result, mask=mask, type=pa.string(), from_pandas=True)
+            result = pa.array(
+                result, mask=mask, type=pa.large_string(), from_pandas=True
+            )
             return type(self)(result)
         else:
             # This is when the result type is object. We reach this when

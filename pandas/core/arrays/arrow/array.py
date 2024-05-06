@@ -29,7 +29,6 @@ from pandas.compat import (
     pa_version_under13p0,
 )
 from pandas.util._decorators import doc
-from pandas.util._validators import validate_fillna_kwargs
 
 from pandas.core.dtypes.cast import (
     can_hold_element,
@@ -199,12 +198,14 @@ if TYPE_CHECKING:
         npt,
     )
 
+    from pandas.core.dtypes.dtypes import ExtensionDtype
+
     from pandas import Series
     from pandas.core.arrays.datetimes import DatetimeArray
     from pandas.core.arrays.timedeltas import TimedeltaArray
 
 
-def get_unit_from_pa_dtype(pa_dtype):
+def get_unit_from_pa_dtype(pa_dtype) -> str:
     # https://github.com/pandas-dev/pandas/pull/50998#discussion_r1100344804
     if pa_version_under11p0:
         unit = str(pa_dtype).split("[", 1)[-1][:-1]
@@ -316,7 +317,7 @@ class ArrowExtensionArray(
 
     @classmethod
     def _from_sequence_of_strings(
-        cls, strings, *, dtype: Dtype | None = None, copy: bool = False
+        cls, strings, *, dtype: ExtensionDtype, copy: bool = False
     ) -> Self:
         """
         Construct a new ExtensionArray from a sequence of strings.
@@ -524,6 +525,8 @@ class ArrowExtensionArray(
         if pa_type is not None and pa_array.type != pa_type:
             if pa.types.is_dictionary(pa_type):
                 pa_array = pa_array.dictionary_encode()
+                if pa_array.type != pa_type:
+                    pa_array = pa_array.cast(pa_type)
             else:
                 try:
                     pa_array = pa_array.cast(pa_type)
@@ -533,8 +536,9 @@ class ArrowExtensionArray(
                     ):
                         # TODO: Move logic in _from_sequence_of_strings into
                         # _box_pa_array
+                        dtype = ArrowDtype(pa_type)
                         return cls._from_sequence_of_strings(
-                            value, dtype=pa_type
+                            value, dtype=dtype
                         )._pa_array
                     else:
                         raise
@@ -656,7 +660,9 @@ class ArrowExtensionArray(
         """Convert myself to a pyarrow ChunkedArray."""
         return self._pa_array
 
-    def __array__(self, dtype: NpDtype | None = None) -> np.ndarray:
+    def __array__(
+        self, dtype: NpDtype | None = None, copy: bool | None = None
+    ) -> np.ndarray:
         """Correctly construct numpy arrays when passed to `np.asarray()`."""
         return self.to_numpy(dtype=dtype)
 
@@ -847,12 +853,10 @@ class ArrowExtensionArray(
         return self._pa_array.is_null().to_numpy()
 
     @overload
-    def any(self, *, skipna: Literal[True] = ..., **kwargs) -> bool:
-        ...
+    def any(self, *, skipna: Literal[True] = ..., **kwargs) -> bool: ...
 
     @overload
-    def any(self, *, skipna: bool, **kwargs) -> bool | NAType:
-        ...
+    def any(self, *, skipna: bool, **kwargs) -> bool | NAType: ...
 
     def any(self, *, skipna: bool = True, **kwargs) -> bool | NAType:
         """
@@ -913,12 +917,10 @@ class ArrowExtensionArray(
         return self._reduce("any", skipna=skipna, **kwargs)
 
     @overload
-    def all(self, *, skipna: Literal[True] = ..., **kwargs) -> bool:
-        ...
+    def all(self, *, skipna: Literal[True] = ..., **kwargs) -> bool: ...
 
     @overload
-    def all(self, *, skipna: bool, **kwargs) -> bool | NAType:
-        ...
+    def all(self, *, skipna: bool, **kwargs) -> bool | NAType: ...
 
     def all(self, *, skipna: bool = True, **kwargs) -> bool | NAType:
         """
@@ -1067,6 +1069,7 @@ class ArrowExtensionArray(
                 #   a kernel for duration types.
                 pass
 
+        # TODO: Why do we no longer need the above cases?
         # TODO(3.0): after EA.fillna 'method' deprecation is enforced, we can remove
         #  this method entirely.
         return super()._pad_or_backfill(
@@ -1076,22 +1079,16 @@ class ArrowExtensionArray(
     @doc(ExtensionArray.fillna)
     def fillna(
         self,
-        value: object | ArrayLike | None = None,
-        method: FillnaOptions | None = None,
+        value: object | ArrayLike,
         limit: int | None = None,
         copy: bool = True,
     ) -> Self:
-        value, method = validate_fillna_kwargs(value, method)
-
         if not self._hasna:
             # TODO(CoW): Not necessary anymore when CoW is the default
             return self.copy()
 
         if limit is not None:
-            return super().fillna(value=value, method=method, limit=limit, copy=copy)
-
-        if method is not None:
-            return super().fillna(method=method, limit=limit, copy=copy)
+            return super().fillna(value=value, limit=limit, copy=copy)
 
         if isinstance(value, (np.ndarray, ExtensionArray)):
             # Similar to check_value_size, but we do not mask here since we may
@@ -1117,7 +1114,7 @@ class ArrowExtensionArray(
             #   a kernel for duration types.
             pass
 
-        return super().fillna(value=value, method=method, limit=limit, copy=copy)
+        return super().fillna(value=value, limit=limit, copy=copy)
 
     def isin(self, values: ArrayLike) -> npt.NDArray[np.bool_]:
         # short-circuit to return all False array.
@@ -1364,6 +1361,11 @@ class ArrowExtensionArray(
         np_array = np_array.astype(np_dtype)
         return TimedeltaArray._simple_new(np_array, dtype=np_dtype)
 
+    def _values_for_json(self) -> np.ndarray:
+        if is_numeric_dtype(self.dtype):
+            return np.asarray(self, dtype=object)
+        return super()._values_for_json()
+
     @doc(ExtensionArray.to_numpy)
     def to_numpy(
         self,
@@ -1425,7 +1427,7 @@ class ArrowExtensionArray(
 
     def map(self, mapper, na_action=None):
         if is_numeric_dtype(self.dtype):
-            return map_array(self.to_numpy(), mapper, na_action=None)
+            return map_array(self.to_numpy(), mapper, na_action=na_action)
         else:
             return super().map(mapper, na_action)
 
@@ -1697,7 +1699,7 @@ class ArrowExtensionArray(
         except (AttributeError, NotImplementedError, TypeError) as err:
             msg = (
                 f"'{type(self).__name__}' with dtype {self.dtype} "
-                f"does not support reduction '{name}' with pyarrow "
+                f"does not support operation '{name}' with pyarrow "
                 f"version {pa.__version__}. '{name}' may be supported by "
                 f"upgrading pyarrow."
             )
@@ -1961,7 +1963,7 @@ class ArrowExtensionArray(
         na_option: str = "keep",
         ascending: bool = True,
         pct: bool = False,
-    ):
+    ) -> Self:
         """
         See Series.rank.__doc__.
         """
@@ -2081,6 +2083,23 @@ class ArrowExtensionArray(
         See NDFrame.interpolate.__doc__.
         """
         # NB: we return type(self) even if copy=False
+        if not self.dtype._is_numeric:
+            raise ValueError("Values must be numeric.")
+
+        if (
+            not pa_version_under13p0
+            and method == "linear"
+            and limit_area is None
+            and limit is None
+            and limit_direction == "forward"
+        ):
+            values = self._pa_array.combine_chunks()
+            na_value = pa.array([None], type=values.type)
+            y_diff_2 = pc.fill_null_backward(pc.pairwise_diff_checked(values, period=2))
+            prev_values = pa.concat_arrays([na_value, values[:-2], na_value])
+            interps = pc.add_checked(prev_values, pc.divide_checked(y_diff_2, 2))
+            return type(self)(pc.coalesce(self._pa_array, interps))
+
         mask = self.isna()
         if self.dtype.kind == "f":
             data = self._pa_array.to_numpy()
@@ -2893,7 +2912,9 @@ class ArrowExtensionArray(
             locale = "C"
         return type(self)(pc.strftime(self._pa_array, format="%B", locale=locale))
 
-    def _dt_to_pydatetime(self) -> np.ndarray:
+    def _dt_to_pydatetime(self) -> Series:
+        from pandas import Series
+
         if pa.types.is_date(self.dtype.pyarrow_dtype):
             raise ValueError(
                 f"to_pydatetime cannot be called with {self.dtype.pyarrow_dtype} type. "
@@ -2902,7 +2923,7 @@ class ArrowExtensionArray(
         data = self._pa_array.to_pylist()
         if self._dtype.pyarrow_dtype.unit == "ns":
             data = [None if ts is None else ts.to_pydatetime(warn=False) for ts in data]
-        return np.array(data, dtype=object)
+        return Series(data, dtype=object)
 
     def _dt_tz_localize(
         self,

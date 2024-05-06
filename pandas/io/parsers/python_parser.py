@@ -110,8 +110,6 @@ class PythonParser(ParserBase):
         if "has_index_names" in kwds:
             self.has_index_names = kwds["has_index_names"]
 
-        self.verbose = kwds["verbose"]
-
         self.thousands = kwds["thousands"]
         self.decimal = kwds["decimal"]
 
@@ -266,6 +264,7 @@ class PythonParser(ParserBase):
         # done with first read, next time raise StopIteration
         self._first_chunk = False
 
+        index: Index | None
         columns: Sequence[Hashable] = list(self.orig_names)
         if not len(content):  # pragma: no cover
             # DataFrame with the right metadata, even though it's length 0
@@ -355,14 +354,15 @@ class PythonParser(ParserBase):
 
         if isinstance(self.na_values, dict):
             for col in self.na_values:
-                na_value = self.na_values[col]
-                na_fvalue = self.na_fvalues[col]
+                if col is not None:
+                    na_value = self.na_values[col]
+                    na_fvalue = self.na_fvalues[col]
 
-                if isinstance(col, int) and col not in self.orig_names:
-                    col = self.orig_names[col]
+                    if isinstance(col, int) and col not in self.orig_names:
+                        col = self.orig_names[col]
 
-                clean_na_values[col] = na_value
-                clean_na_fvalues[col] = na_fvalue
+                    clean_na_values[col] = na_value
+                    clean_na_fvalues[col] = na_fvalue
         else:
             clean_na_values = self.na_values
             clean_na_fvalues = self.na_fvalues
@@ -371,7 +371,6 @@ class PythonParser(ParserBase):
             data,
             clean_na_values,
             clean_na_fvalues,
-            self.verbose,
             clean_conv,
             clean_dtypes,
         )

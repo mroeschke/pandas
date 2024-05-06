@@ -3,6 +3,7 @@ These the test the public routines exposed in types/common.py
 related to inference and not otherwise tested in types/test_common.py
 
 """
+
 import collections
 from collections import namedtuple
 from collections.abc import Iterator
@@ -63,7 +64,6 @@ from pandas import (
     Index,
     Interval,
     Period,
-    PeriodIndex,
     Series,
     Timedelta,
     TimedeltaIndex,
@@ -112,8 +112,8 @@ class MockNumpyLikeArray:
     def __len__(self) -> int:
         return len(self._values)
 
-    def __array__(self, t=None):
-        return np.asarray(self._values, dtype=t)
+    def __array__(self, dtype=None, copy=None):
+        return np.asarray(self._values, dtype=dtype)
 
     @property
     def ndim(self):
@@ -240,8 +240,7 @@ def test_is_list_like_generic():
     # is_list_like was yielding false positives for Generic classes in python 3.11
     T = TypeVar("T")
 
-    class MyDataFrame(DataFrame, Generic[T]):
-        ...
+    class MyDataFrame(DataFrame, Generic[T]): ...
 
     tstc = MyDataFrame[int]
     tst = MyDataFrame[int]({"x": [1, 2, 3]})
@@ -937,9 +936,9 @@ class TestInference:
     def test_maybe_convert_objects_nullable_boolean(self):
         # GH50047
         arr = np.array([True, False], dtype=object)
-        exp = np.array([True, False])
+        exp = BooleanArray._from_sequence([True, False], dtype="boolean")
         out = lib.maybe_convert_objects(arr, convert_to_nullable_dtype=True)
-        tm.assert_numpy_array_equal(out, exp)
+        tm.assert_extension_array_equal(out, exp)
 
         arr = np.array([True, False, pd.NaT], dtype=object)
         exp = np.array([True, False, pd.NaT], dtype=object)
@@ -1616,25 +1615,6 @@ class TestTypeInference:
         )
         out = lib.to_object_array(rows, min_width=5)
         tm.assert_numpy_array_equal(out, expected)
-
-    def test_is_period(self):
-        # GH#55264
-        msg = "is_period is deprecated and will be removed in a future version"
-        with tm.assert_produces_warning(FutureWarning, match=msg):
-            assert lib.is_period(Period("2011-01", freq="M"))
-            assert not lib.is_period(PeriodIndex(["2011-01"], freq="M"))
-            assert not lib.is_period(Timestamp("2011-01"))
-            assert not lib.is_period(1)
-            assert not lib.is_period(np.nan)
-
-    def test_is_interval(self):
-        # GH#55264
-        msg = "is_interval is deprecated and will be removed in a future version"
-        item = Interval(1, 2)
-        with tm.assert_produces_warning(FutureWarning, match=msg):
-            assert lib.is_interval(item)
-            assert not lib.is_interval(pd.IntervalIndex([item]))
-            assert not lib.is_interval(pd.IntervalIndex([item])._engine)
 
     def test_categorical(self):
         # GH 8974

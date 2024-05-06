@@ -71,8 +71,8 @@ class TestIndex:
         tm.assert_contains_all(arr, new_index)
         tm.assert_index_equal(index, new_index)
 
-    @pytest.mark.parametrize("index", ["string"], indirect=True)
-    def test_constructor_copy(self, index, using_infer_string):
+    def test_constructor_copy(self, using_infer_string):
+        index = Index(list("abc"), name="name")
         arr = np.array(index)
         new_index = Index(arr, copy=True, name="name")
         assert isinstance(new_index, Index)
@@ -358,7 +358,10 @@ class TestIndex:
             with pytest.raises(NotImplementedError, match="i8"):
                 index.view("i8")
         else:
-            msg = "Cannot change data-type for object array"
+            msg = (
+                "Cannot change data-type for array of references.|"
+                "Cannot change data-type for object array.|"
+            )
             with pytest.raises(TypeError, match=msg):
                 index.view("i8")
 
@@ -478,7 +481,7 @@ class TestIndex:
 
         assert index[[]].identical(empty_index)
         if dtype == np.bool_:
-            with tm.assert_produces_warning(FutureWarning, match="is deprecated"):
+            with pytest.raises(ValueError, match="length of the boolean indexer"):
                 assert index[empty_arr].identical(empty_index)
         else:
             assert index[empty_arr].identical(empty_index)
@@ -636,9 +639,7 @@ class TestIndex:
         left = Index([], name="foo")
         right = Index([1, 2, 3], name=name)
 
-        msg = "The behavior of array concatenation with empty entries is deprecated"
-        with tm.assert_produces_warning(FutureWarning, match=msg):
-            result = left.append(right)
+        result = left.append(right)
         assert result.name == expected
 
     @pytest.mark.parametrize(
@@ -685,41 +686,6 @@ class TestIndex:
 
     def test_summary(self, index):
         index._summary()
-
-    def test_format_bug(self):
-        # GH 14626
-        # windows has different precision on datetime.datetime.now (it doesn't
-        # include us since the default for Timestamp shows these but Index
-        # formatting does not we are skipping)
-        now = datetime.now()
-        msg = r"Index\.format is deprecated"
-
-        if not str(now).endswith("000"):
-            index = Index([now])
-            with tm.assert_produces_warning(FutureWarning, match=msg):
-                formatted = index.format()
-            expected = [str(index[0])]
-            assert formatted == expected
-
-        with tm.assert_produces_warning(FutureWarning, match=msg):
-            Index([]).format()
-
-    @pytest.mark.parametrize("vals", [[1, 2.0 + 3.0j, 4.0], ["a", "b", "c"]])
-    def test_format_missing(self, vals, nulls_fixture):
-        # 2845
-        vals = list(vals)  # Copy for each iteration
-        vals.append(nulls_fixture)
-        index = Index(vals, dtype=object)
-        # TODO: case with complex dtype?
-
-        msg = r"Index\.format is deprecated"
-        with tm.assert_produces_warning(FutureWarning, match=msg):
-            formatted = index.format()
-        null_repr = "NaN" if isinstance(nulls_fixture, float) else str(nulls_fixture)
-        expected = [str(index[0]), str(index[1]), str(index[2]), null_repr]
-
-        assert formatted == expected
-        assert index[3] is nulls_fixture
 
     def test_logical_compat(self, all_boolean_reductions, simple_index):
         index = simple_index
@@ -1099,10 +1065,10 @@ class TestIndex:
         left_index = Index(np.random.default_rng(2).permutation(15))
         right_index = date_range("2020-01-01", periods=10)
 
-        with tm.assert_produces_warning(RuntimeWarning):
+        with tm.assert_produces_warning(RuntimeWarning, match="not supported between"):
             result = left_index.join(right_index, how="outer")
 
-        with tm.assert_produces_warning(RuntimeWarning):
+        with tm.assert_produces_warning(RuntimeWarning, match="not supported between"):
             expected = left_index.astype(object).union(right_index.astype(object))
 
         tm.assert_index_equal(result, expected)
@@ -1549,8 +1515,10 @@ class TestIndexUtils:
     @pytest.mark.parametrize(
         "data, names, expected",
         [
-            ([[1, 2, 3]], None, Index([1, 2, 3])),
-            ([[1, 2, 3]], ["name"], Index([1, 2, 3], name="name")),
+            ([[1, 2, 4]], None, Index([1, 2, 4])),
+            ([[1, 2, 4]], ["name"], Index([1, 2, 4], name="name")),
+            ([[1, 2, 3]], None, RangeIndex(1, 4)),
+            ([[1, 2, 3]], ["name"], RangeIndex(1, 4, name="name")),
             (
                 [["a", "a"], ["c", "d"]],
                 None,
@@ -1565,7 +1533,7 @@ class TestIndexUtils:
     )
     def test_ensure_index_from_sequences(self, data, names, expected):
         result = ensure_index_from_sequences(data, names)
-        tm.assert_index_equal(result, expected)
+        tm.assert_index_equal(result, expected, exact=True)
 
     def test_ensure_index_mixed_closed_intervals(self):
         # GH27172
@@ -1721,3 +1689,13 @@ def test_nan_comparison_same_object(op):
 
     result = op(idx, idx.copy())
     tm.assert_numpy_array_equal(result, expected)
+
+
+@td.skip_if_no("pyarrow")
+def test_is_monotonic_pyarrow_list_type():
+    # GH 57333
+    import pyarrow as pa
+
+    idx = Index([[1], [2, 3]], dtype=pd.ArrowDtype(pa.list_(pa.int64())))
+    assert not idx.is_monotonic_increasing
+    assert not idx.is_monotonic_decreasing

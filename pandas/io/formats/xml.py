@@ -1,6 +1,7 @@
 """
 :mod:`pandas.io.formats.xml` is a module for formatting data in XML.
 """
+
 from __future__ import annotations
 
 import codecs
@@ -10,7 +11,6 @@ from typing import (
     Any,
     final,
 )
-import warnings
 
 from pandas.errors import AbstractMethodError
 from pandas.util._decorators import (
@@ -24,10 +24,7 @@ from pandas.core.dtypes.missing import isna
 from pandas.core.shared_docs import _shared_docs
 
 from pandas.io.common import get_handle
-from pandas.io.xml import (
-    get_data_from_filepath,
-    preprocess_data,
-)
+from pandas.io.xml import get_data_from_filepath
 
 if TYPE_CHECKING:
     from pandas._typing import (
@@ -210,13 +207,7 @@ class _BaseXMLFormatter:
             df = df.reset_index()
 
         if self.na_rep is not None:
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    "Downcasting object dtype arrays",
-                    category=FutureWarning,
-                )
-                df = df.fillna(self.na_rep)
+            df = df.fillna(self.na_rep)
 
         return df.to_dict(orient="index")
 
@@ -548,7 +539,7 @@ class LxmlXMLFormatter(_BaseXMLFormatter):
             storage_options=self.storage_options,
         )
 
-        with preprocess_data(handle_data) as xml_data:
+        with handle_data as xml_data:
             curr_parser = XMLParser(encoding=self.encoding)
 
             if isinstance(xml_data, io.StringIO):

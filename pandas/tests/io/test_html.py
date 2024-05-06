@@ -112,13 +112,9 @@ def flavor_read_html(request):
 class TestReadHtml:
     def test_literal_html_deprecation(self, flavor_read_html):
         # GH 53785
-        msg = (
-            "Passing literal html to 'read_html' is deprecated and "
-            "will be removed in a future version. To read from a "
-            "literal string, wrap it in a 'StringIO' object."
-        )
+        msg = r"\[Errno 2\] No such file or director"
 
-        with tm.assert_produces_warning(FutureWarning, match=msg):
+        with pytest.raises(FileNotFoundError, match=msg):
             flavor_read_html(
                 """<table>
                 <thead>
@@ -156,7 +152,6 @@ class TestReadHtml:
                 np.random.default_rng(2).random((4, 3)),
                 columns=pd.Index(list("abc"), dtype=object),
             )
-            # pylint: disable-next=consider-using-f-string
             .map("{:.3f}".format)
             .astype(float)
         )
@@ -1405,7 +1400,7 @@ class TestReadHtml:
         try:
             with open(html_encoding_file, "rb") as fobj:
                 from_string = flavor_read_html(
-                    fobj.read(), encoding=encoding, index_col=0
+                    BytesIO(fobj.read()), encoding=encoding, index_col=0
                 ).pop()
 
             with open(html_encoding_file, "rb") as fobj:
@@ -1464,9 +1459,7 @@ class TestReadHtml:
             def seekable(self):
                 return True
 
-            # GH 49036 pylint checks for presence of __next__ for iterators
-            def __next__(self):
-                ...
+            def __next__(self): ...
 
             def __iter__(self) -> Iterator:
                 # `is_file_like` depends on the presence of

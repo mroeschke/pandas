@@ -117,16 +117,8 @@ class TestSetitemCoercion(CoercionBase):
         obj = pd.Series([1, 2, 3, 4], index=pd.Index(list("abcd"), dtype=object))
         assert obj.index.dtype == object
 
-        if exp_dtype is IndexError:
-            temp = obj.copy()
-            warn_msg = "Series.__setitem__ treating keys as positions is deprecated"
-            msg = "index 5 is out of bounds for axis 0 with size 4"
-            with pytest.raises(exp_dtype, match=msg):
-                with tm.assert_produces_warning(FutureWarning, match=warn_msg):
-                    temp[5] = 5
-        else:
-            exp_index = pd.Index(list("abcd") + [val], dtype=object)
-            self._assert_setitem_index_conversion(obj, val, exp_index, exp_dtype)
+        exp_index = pd.Index(list("abcd") + [val], dtype=object)
+        self._assert_setitem_index_conversion(obj, val, exp_index, exp_dtype)
 
     @pytest.mark.parametrize(
         "val,exp_dtype", [(5, np.int64), (1.1, np.float64), ("x", object)]
@@ -860,18 +852,8 @@ class TestReplaceSeriesCoercion(CoercionBase):
             exp = pd.Series(self.rep[to_key], index=index, name="yyy")
             assert exp.dtype == to_key
 
-        msg = "Downcasting behavior in `replace`"
-        warn = FutureWarning
-        if (
-            exp.dtype == obj.dtype
-            or exp.dtype == object
-            or (exp.dtype.kind in "iufc" and obj.dtype.kind in "iufc")
-        ):
-            warn = None
-        with tm.assert_produces_warning(warn, match=msg):
-            result = obj.replace(replacer)
-
-        tm.assert_series_equal(result, exp)
+        result = obj.replace(replacer)
+        tm.assert_series_equal(result, exp, check_dtype=False)
 
     @pytest.mark.parametrize(
         "to_key",
@@ -894,12 +876,8 @@ class TestReplaceSeriesCoercion(CoercionBase):
         else:
             assert exp.dtype == to_key
 
-        msg = "Downcasting behavior in `replace`"
-        warn = FutureWarning if exp.dtype != object else None
-        with tm.assert_produces_warning(warn, match=msg):
-            result = obj.replace(replacer)
-
-        tm.assert_series_equal(result, exp)
+        result = obj.replace(replacer)
+        tm.assert_series_equal(result, exp, check_dtype=False)
 
     @pytest.mark.parametrize(
         "to_key",
@@ -917,23 +895,16 @@ class TestReplaceSeriesCoercion(CoercionBase):
         assert obj.dtype == from_key
 
         exp = pd.Series(self.rep[to_key], index=index, name="yyy")
-        warn = FutureWarning
         if isinstance(obj.dtype, pd.DatetimeTZDtype) and isinstance(
             exp.dtype, pd.DatetimeTZDtype
         ):
             # with mismatched tzs, we retain the original dtype as of 2.0
             exp = exp.astype(obj.dtype)
-            warn = None
         else:
             assert exp.dtype == to_key
-            if to_key == from_key:
-                warn = None
 
-        msg = "Downcasting behavior in `replace`"
-        with tm.assert_produces_warning(warn, match=msg):
-            result = obj.replace(replacer)
-
-        tm.assert_series_equal(result, exp)
+        result = obj.replace(replacer)
+        tm.assert_series_equal(result, exp, check_dtype=False)
 
     @pytest.mark.xfail(reason="Test not implemented")
     def test_replace_series_period(self):

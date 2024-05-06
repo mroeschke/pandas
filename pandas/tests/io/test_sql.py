@@ -1373,6 +1373,30 @@ def test_insertion_method_on_conflict_do_nothing(conn, request):
         pandasSQL.drop_table("test_insert_conflict")
 
 
+@pytest.mark.parametrize("conn", all_connectable)
+def test_to_sql_on_public_schema(conn, request):
+    if "sqlite" in conn or "mysql" in conn:
+        request.applymarker(
+            pytest.mark.xfail(
+                reason="test for public schema only specific to postgresql"
+            )
+        )
+
+    conn = request.getfixturevalue(conn)
+
+    test_data = DataFrame([[1, 2.1, "a"], [2, 3.1, "b"]], columns=list("abc"))
+    test_data.to_sql(
+        name="test_public_schema",
+        con=conn,
+        if_exists="append",
+        index=False,
+        schema="public",
+    )
+
+    df_out = sql.read_sql_table("test_public_schema", conn, schema="public")
+    tm.assert_frame_equal(test_data, df_out)
+
+
 @pytest.mark.parametrize("conn", mysql_connectable)
 def test_insertion_method_on_conflict_update(conn, request):
     # GH 14553: Example in to_sql docstring
@@ -1485,26 +1509,6 @@ SELECT * FROM groups;
     result = pd.read_sql("SELECT * FROM group_view", sqlite_buildin)
     expected = DataFrame({"group_id": [1], "name": "name"})
     tm.assert_frame_equal(result, expected)
-
-
-def test_execute_typeerror(sqlite_engine_iris):
-    with pytest.raises(TypeError, match="pandas.io.sql.execute requires a connection"):
-        with tm.assert_produces_warning(
-            FutureWarning,
-            match="`pandas.io.sql.execute` is deprecated and "
-            "will be removed in the future version.",
-        ):
-            sql.execute("select * from iris", sqlite_engine_iris)
-
-
-def test_execute_deprecated(sqlite_conn_iris):
-    # GH50185
-    with tm.assert_produces_warning(
-        FutureWarning,
-        match="`pandas.io.sql.execute` is deprecated and "
-        "will be removed in the future version.",
-    ):
-        sql.execute("select * from iris", sqlite_conn_iris)
 
 
 def flavor(conn_name):
@@ -1796,7 +1800,7 @@ def test_api_date_parsing(conn, request):
 
 
 @pytest.mark.parametrize("conn", all_connectable_types)
-@pytest.mark.parametrize("error", ["ignore", "raise", "coerce"])
+@pytest.mark.parametrize("error", ["raise", "coerce"])
 @pytest.mark.parametrize(
     "read_sql, text, mode",
     [
@@ -2598,7 +2602,7 @@ def test_con_unknown_dbapi2_class_does_not_error_without_sql_alchemy_installed()
             self.conn.close()
 
     with contextlib.closing(MockSqliteConnection(":memory:")) as conn:
-        with tm.assert_produces_warning(UserWarning):
+        with tm.assert_produces_warning(UserWarning, match="only supports SQLAlchemy"):
             sql.read_sql("SELECT 1", conn)
 
 
@@ -3744,20 +3748,6 @@ def test_read_sql_dtype(conn, request, func, dtype_backend):
         }
     )
     tm.assert_frame_equal(result, expected)
-
-
-def test_keyword_deprecation(sqlite_engine):
-    conn = sqlite_engine
-    # GH 54397
-    msg = (
-        "Starting with pandas version 3.0 all arguments of to_sql except for the "
-        "arguments 'name' and 'con' will be keyword-only."
-    )
-    df = DataFrame([{"A": 1, "B": 2, "C": 3}, {"A": 1, "B": 2, "C": 3}])
-    df.to_sql("example", conn)
-
-    with tm.assert_produces_warning(FutureWarning, match=msg):
-        df.to_sql("example", conn, None, if_exists="replace")
 
 
 def test_bigint_warning(sqlite_engine):

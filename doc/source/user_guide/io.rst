@@ -16,27 +16,25 @@ The pandas I/O API is a set of top level ``reader`` functions accessed like
 .. csv-table::
     :header: "Format Type", "Data Description", "Reader", "Writer"
     :widths: 30, 100, 60, 60
-    :delim: ;
 
-    text;`CSV <https://en.wikipedia.org/wiki/Comma-separated_values>`__;:ref:`read_csv<io.read_csv_table>`;:ref:`to_csv<io.store_in_csv>`
-    text;Fixed-Width Text File;:ref:`read_fwf<io.fwf_reader>`
-    text;`JSON <https://www.json.org/>`__;:ref:`read_json<io.json_reader>`;:ref:`to_json<io.json_writer>`
-    text;`HTML <https://en.wikipedia.org/wiki/HTML>`__;:ref:`read_html<io.read_html>`;:ref:`to_html<io.html>`
-    text;`LaTeX <https://en.wikipedia.org/wiki/LaTeX>`__;;:ref:`Styler.to_latex<io.latex>`
-    text;`XML <https://www.w3.org/standards/xml/core>`__;:ref:`read_xml<io.read_xml>`;:ref:`to_xml<io.xml>`
-    text; Local clipboard;:ref:`read_clipboard<io.clipboard>`;:ref:`to_clipboard<io.clipboard>`
-    binary;`MS Excel <https://en.wikipedia.org/wiki/Microsoft_Excel>`__;:ref:`read_excel<io.excel_reader>`;:ref:`to_excel<io.excel_writer>`
-    binary;`OpenDocument <http://opendocumentformat.org>`__;:ref:`read_excel<io.ods>`;
-    binary;`HDF5 Format <https://support.hdfgroup.org/HDF5/whatishdf5.html>`__;:ref:`read_hdf<io.hdf5>`;:ref:`to_hdf<io.hdf5>`
-    binary;`Feather Format <https://github.com/wesm/feather>`__;:ref:`read_feather<io.feather>`;:ref:`to_feather<io.feather>`
-    binary;`Parquet Format <https://parquet.apache.org/>`__;:ref:`read_parquet<io.parquet>`;:ref:`to_parquet<io.parquet>`
-    binary;`ORC Format <https://orc.apache.org/>`__;:ref:`read_orc<io.orc>`;:ref:`to_orc<io.orc>`
-    binary;`Stata <https://en.wikipedia.org/wiki/Stata>`__;:ref:`read_stata<io.stata_reader>`;:ref:`to_stata<io.stata_writer>`
-    binary;`SAS <https://en.wikipedia.org/wiki/SAS_(software)>`__;:ref:`read_sas<io.sas_reader>`;
-    binary;`SPSS <https://en.wikipedia.org/wiki/SPSS>`__;:ref:`read_spss<io.spss_reader>`;
-    binary;`Python Pickle Format <https://docs.python.org/3/library/pickle.html>`__;:ref:`read_pickle<io.pickle>`;:ref:`to_pickle<io.pickle>`
-    SQL;`SQL <https://en.wikipedia.org/wiki/SQL>`__;:ref:`read_sql<io.sql>`;:ref:`to_sql<io.sql>`
-    SQL;`Google BigQuery <https://en.wikipedia.org/wiki/BigQuery>`__;:ref:`read_gbq<io.bigquery>`;:ref:`to_gbq<io.bigquery>`
+    text,`CSV <https://en.wikipedia.org/wiki/Comma-separated_values>`__, :ref:`read_csv<io.read_csv_table>`, :ref:`to_csv<io.store_in_csv>`
+    text,Fixed-Width Text File, :ref:`read_fwf<io.fwf_reader>` , NA
+    text,`JSON <https://www.json.org/>`__, :ref:`read_json<io.json_reader>`, :ref:`to_json<io.json_writer>`
+    text,`HTML <https://en.wikipedia.org/wiki/HTML>`__, :ref:`read_html<io.read_html>`, :ref:`to_html<io.html>`
+    text,`LaTeX <https://en.wikipedia.org/wiki/LaTeX>`__, :ref:`Styler.to_latex<io.latex>` , NA
+    text,`XML <https://www.w3.org/standards/xml/core>`__, :ref:`read_xml<io.read_xml>`, :ref:`to_xml<io.xml>`
+    text, Local clipboard, :ref:`read_clipboard<io.clipboard>`, :ref:`to_clipboard<io.clipboard>`
+    binary,`MS Excel <https://en.wikipedia.org/wiki/Microsoft_Excel>`__ , :ref:`read_excel<io.excel_reader>`, :ref:`to_excel<io.excel_writer>`
+    binary,`OpenDocument <http://opendocumentformat.org>`__, :ref:`read_excel<io.ods>`, NA
+    binary,`HDF5 Format <https://support.hdfgroup.org/HDF5/whatishdf5.html>`__, :ref:`read_hdf<io.hdf5>`, :ref:`to_hdf<io.hdf5>`
+    binary,`Feather Format <https://github.com/wesm/feather>`__, :ref:`read_feather<io.feather>`, :ref:`to_feather<io.feather>`
+    binary,`Parquet Format <https://parquet.apache.org/>`__, :ref:`read_parquet<io.parquet>`, :ref:`to_parquet<io.parquet>`
+    binary,`ORC Format <https://orc.apache.org/>`__, :ref:`read_orc<io.orc>`, :ref:`to_orc<io.orc>`
+    binary,`Stata <https://en.wikipedia.org/wiki/Stata>`__, :ref:`read_stata<io.stata_reader>`, :ref:`to_stata<io.stata_writer>`
+    binary,`SAS <https://en.wikipedia.org/wiki/SAS_(software)>`__, :ref:`read_sas<io.sas_reader>` , NA
+    binary,`SPSS <https://en.wikipedia.org/wiki/SPSS>`__, :ref:`read_spss<io.spss_reader>` , NA
+    binary,`Python Pickle Format <https://docs.python.org/3/library/pickle.html>`__, :ref:`read_pickle<io.pickle>`, :ref:`to_pickle<io.pickle>`
+    SQL,`SQL <https://en.wikipedia.org/wiki/SQL>`__, :ref:`read_sql<io.sql>`,:ref:`to_sql<io.sql>`
 
 :ref:`Here <io.perf>` is an informal performance comparison for some of these IO methods.
 
@@ -1045,7 +1043,7 @@ Writing CSVs to binary file objects
 
 ``df.to_csv(..., mode="wb")`` allows writing a CSV to a file object
 opened binary mode. In most cases, it is not necessary to specify
-``mode`` as Pandas will auto-detect whether the file object is
+``mode`` as pandas will auto-detect whether the file object is
 opened in text or binary mode.
 
 .. ipython:: python
@@ -1605,7 +1603,7 @@ Specifying ``iterator=True`` will also return the ``TextFileReader`` object:
 Specifying the parser engine
 ''''''''''''''''''''''''''''
 
-Pandas currently supports three engines, the C engine, the python engine, and an experimental
+pandas currently supports three engines, the C engine, the python engine, and an experimental
 pyarrow engine (requires the ``pyarrow`` package). In general, the pyarrow engine is fastest
 on larger workloads and is equivalent in speed to the C engine on most other workloads.
 The python engine tends to be slower than the pyarrow and C engines on most workloads. However,
@@ -1838,14 +1836,13 @@ with optional parameters:
 
   .. csv-table::
      :widths: 20, 150
-     :delim: ;
 
-     ``split``; dict like {index -> [index], columns -> [columns], data -> [values]}
-     ``records``; list like [{column -> value}, ... , {column -> value}]
-     ``index``; dict like {index -> {column -> value}}
-     ``columns``; dict like {column -> {index -> value}}
-     ``values``; just the values array
-     ``table``; adhering to the JSON `Table Schema`_
+     ``split``, dict like {index -> [index]; columns -> [columns]; data -> [values]}
+     ``records``, list like [{column -> value}; ... ]
+     ``index``, dict like {index -> {column -> value}}
+     ``columns``, dict like {column -> {index -> value}}
+     ``values``, just the values array
+     ``table``, adhering to the JSON `Table Schema`_
 
 * ``date_format`` : string, type of date conversion, 'epoch' for timestamp, 'iso' for ISO8601.
 * ``double_precision`` : The number of decimal places to use when encoding floating point values, default 10.
@@ -1950,13 +1947,6 @@ Writing in ISO date format, with microseconds:
    json = dfd.to_json(date_format="iso", date_unit="us")
    json
 
-Epoch timestamps, in seconds:
-
-.. ipython:: python
-
-   json = dfd.to_json(date_format="epoch", date_unit="s")
-   json
-
 Writing to a file, with a date index and a date column:
 
 .. ipython:: python
@@ -1966,7 +1956,7 @@ Writing to a file, with a date index and a date column:
    dfj2["ints"] = list(range(5))
    dfj2["bools"] = True
    dfj2.index = pd.date_range("20130101", periods=5)
-   dfj2.to_json("test.json")
+   dfj2.to_json("test.json", date_format="iso")
 
    with open("test.json") as fh:
        print(fh.read())
@@ -2033,14 +2023,13 @@ is ``None``. To explicitly force ``Series`` parsing, pass ``typ=series``
 
   .. csv-table::
      :widths: 20, 150
-     :delim: ;
 
-     ``split``; dict like {index -> [index], columns -> [columns], data -> [values]}
-     ``records``; list like [{column -> value}, ... , {column -> value}]
-     ``index``; dict like {index -> {column -> value}}
-     ``columns``; dict like {column -> {index -> value}}
-     ``values``; just the values array
-     ``table``; adhering to the JSON `Table Schema`_
+     ``split``, dict like {index -> [index]; columns -> [columns]; data -> [values]}
+     ``records``, list like [{column -> value} ...]
+     ``index``, dict like {index -> {column -> value}}
+     ``columns``, dict like {column -> {index -> value}}
+     ``values``, just the values array
+     ``table``, adhering to the JSON `Table Schema`_
 
 
 * ``dtype`` : if True, infer dtypes, if a dict of column to dtype, then use those, if ``False``, then don't infer dtypes at all, default is True, apply only to the data.
@@ -2141,7 +2130,7 @@ Dates written in nanoseconds need to be read back in nanoseconds:
 .. ipython:: python
 
    from io import StringIO
-   json = dfj2.to_json(date_unit="ns")
+   json = dfj2.to_json(date_format="iso", date_unit="ns")
 
    # Try to parse timestamps as milliseconds -> Won't Work
    dfju = pd.read_json(StringIO(json), date_unit="ms")
@@ -3248,7 +3237,7 @@ output (as shown below for demonstration) for easier parse into ``DataFrame``:
       </row>
     </response>"""
 
-   df = pd.read_xml(StringIO(xml), stylesheet=xsl)
+   df = pd.read_xml(StringIO(xml), stylesheet=StringIO(xsl))
    df
 
 For very large XML files that can range in hundreds of megabytes to gigabytes, :func:`pandas.read_xml`
@@ -3419,7 +3408,7 @@ Write an XML and transform with stylesheet:
       </xsl:template>
     </xsl:stylesheet>"""
 
-   print(geom_df.to_xml(stylesheet=xsl))
+   print(geom_df.to_xml(stylesheet=StringIO(xsl)))
 
 
 XML Final Notes
@@ -3908,6 +3897,20 @@ The look and feel of Excel worksheets created from pandas can be modified using 
 
 * ``float_format`` : Format string for floating point numbers (default ``None``).
 * ``freeze_panes`` : A tuple of two integers representing the bottommost row and rightmost column to freeze. Each of these parameters is one-based, so (1, 1) will freeze the first row and first column (default ``None``).
+
+.. note::
+
+    As of pandas 3.0, by default spreadsheets created with the ``to_excel`` method
+    will not contain any styling. Users wishing to bold text, add bordered styles,
+    etc in a worksheet output by ``to_excel`` can do so by using :meth:`Styler.to_excel`
+    to create styled excel files. For documentation on styling spreadsheets, see
+    `here <https://pandas.pydata.org/docs/user_guide/style.html#Export-to-Excel>`__.
+
+
+.. code-block:: python
+
+    css = "border: 1px solid black; font-weight: bold;"
+    df.style.map_index(lambda x: css).map_index(lambda x: css, axis=1).to_excel("myfile.xlsx")
 
 Using the `Xlsxwriter`_ engine provides many options for controlling the
 format of an Excel worksheet created with the ``to_excel`` method.  Excellent examples can be found in the
@@ -6096,10 +6099,6 @@ Google BigQuery
 
 The ``pandas-gbq`` package provides functionality to read/write from Google BigQuery.
 
-pandas integrates with this external package. if ``pandas-gbq`` is installed, you can
-use the pandas methods ``pd.read_gbq`` and ``DataFrame.to_gbq``, which will call the
-respective functions from ``pandas-gbq``.
-
 Full documentation can be found `here <https://pandas-gbq.readthedocs.io/en/latest/>`__.
 
 .. _io.stata:
@@ -6391,7 +6390,7 @@ ignored.
    In [2]: df = pd.DataFrame({'A': np.random.randn(sz), 'B': [1] * sz})
 
    In [3]: df.info()
-   <class 'pandas.core.frame.DataFrame'>
+   <class 'pandas.DataFrame'>
    RangeIndex: 1000000 entries, 0 to 999999
    Data columns (total 2 columns):
    A    1000000 non-null float64

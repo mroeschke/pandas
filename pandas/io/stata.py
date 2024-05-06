@@ -9,6 +9,7 @@ a once again improved version.
 You can find more information on http://presbrey.mit.edu/PyDTA and
 https://www.statsmodels.org/devel/
 """
+
 from __future__ import annotations
 
 from collections import abc
@@ -160,7 +161,8 @@ filepath_or_buffer : str, path object or file-like object
 
 Returns
 -------
-DataFrame or pandas.api.typing.StataReader
+DataFrame, pandas.api.typing.StataReader
+    If iterator or chunksize, returns StataReader, else DataFrame.
 
 See Also
 --------
@@ -254,7 +256,7 @@ def _stata_elapsed_date_to_datetime_vec(dates: Series, fmt: str) -> Series:
     Examples
     --------
     >>> dates = pd.Series([52])
-    >>> _stata_elapsed_date_to_datetime_vec(dates , "%tw")
+    >>> _stata_elapsed_date_to_datetime_vec(dates, "%tw")
     0   1961-01-01
     dtype: datetime64[s]
 
@@ -373,7 +375,7 @@ def _datetime_to_stata_elapsed_vec(dates: Series, fmt: str) -> Series:
 
     def parse_dates_safe(
         dates: Series, delta: bool = False, year: bool = False, days: bool = False
-    ):
+    ) -> DataFrame:
         d = {}
         if lib.is_np_dtype(dates.dtype, "M"):
             if delta:
@@ -1119,11 +1121,9 @@ class StataReader(StataParser, abc.Iterator):
 
         # State variables for the file
         self._close_file: Callable[[], None] | None = None
-        self._missing_values = False
-        self._can_read_value_labels = False
         self._column_selector_set = False
+        self._value_label_dict: dict[str, dict[int, str]] = {}
         self._value_labels_read = False
-        self._data_read = False
         self._dtype: np.dtype | None = None
         self._lines_read = 0
 
@@ -1178,24 +1178,6 @@ class StataReader(StataParser, abc.Iterator):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        if self._close_file:
-            self._close_file()
-
-    def close(self) -> None:
-        """Close the handle if its open.
-
-        .. deprecated: 2.0.0
-
-           The close method is not part of the public API.
-           The only supported way to use StataReader is to use it as a context manager.
-        """
-        warnings.warn(
-            "The StataReader.close() method is not part of the public API and "
-            "will be removed in a future version without notice. "
-            "Using StataReader as a context manager is the only supported method.",
-            FutureWarning,
-            stacklevel=find_stack_level(),
-        )
         if self._close_file:
             self._close_file()
 
@@ -1395,7 +1377,7 @@ class StataReader(StataParser, abc.Iterator):
         elif self._format_version > 104:
             return self._decode(self._path_or_buf.read(18))
         else:
-            raise ValueError()
+            raise ValueError
 
     def _get_seek_variable_labels(self) -> int:
         if self._format_version == 117:
@@ -1407,7 +1389,7 @@ class StataReader(StataParser, abc.Iterator):
         elif self._format_version >= 118:
             return self._read_int64() + 17
         else:
-            raise ValueError()
+            raise ValueError
 
     def _read_old_header(self, first_char: bytes) -> None:
         self._format_version = int(first_char[0])
@@ -1521,26 +1503,14 @@ the string values returned are correct."""
             )
             return s.decode("latin-1")
 
-    def _read_value_labels(self) -> None:
-        self._ensure_open()
-        if self._value_labels_read:
-            # Don't read twice
-            return
-        if self._format_version <= 108:
-            # Value labels are not supported in version 108 and earlier.
-            self._value_labels_read = True
-            self._value_label_dict: dict[str, dict[float, str]] = {}
-            return
-
+    def _read_new_value_labels(self) -> None:
+        """Reads value labels with variable length strings (108 and later format)"""
         if self._format_version >= 117:
             self._path_or_buf.seek(self._seek_value_labels)
         else:
             assert self._dtype is not None
             offset = self._nobs * self._dtype.itemsize
             self._path_or_buf.seek(self._data_location + offset)
-
-        self._value_labels_read = True
-        self._value_label_dict = {}
 
         while True:
             if self._format_version >= 117:
@@ -1549,8 +1519,10 @@ the string values returned are correct."""
 
             slength = self._path_or_buf.read(4)
             if not slength:
-                break  # end of value label table (format < 117)
-            if self._format_version <= 117:
+                break  # end of value label table (format < 117), or end-of-file
+            if self._format_version == 108:
+                labname = self._decode(self._path_or_buf.read(9))
+            elif self._format_version <= 117:
                 labname = self._decode(self._path_or_buf.read(33))
             else:
                 labname = self._decode(self._path_or_buf.read(129))
@@ -1574,8 +1546,45 @@ the string values returned are correct."""
                 self._value_label_dict[labname][val[i]] = self._decode(
                     txt[off[i] : end]
                 )
+
             if self._format_version >= 117:
                 self._path_or_buf.read(6)  # </lbl>
+
+    def _read_old_value_labels(self) -> None:
+        """Reads value labels with fixed-length strings (105 and earlier format)"""
+        assert self._dtype is not None
+        offset = self._nobs * self._dtype.itemsize
+        self._path_or_buf.seek(self._data_location + offset)
+
+        while True:
+            if not self._path_or_buf.read(2):
+                # end-of-file may have been reached, if so stop here
+                break
+
+            # otherwise back up and read again, taking byteorder into account
+            self._path_or_buf.seek(-2, os.SEEK_CUR)
+            n = self._read_uint16()
+            labname = self._decode(self._path_or_buf.read(9))
+            self._path_or_buf.read(1)  # padding
+            codes = np.frombuffer(
+                self._path_or_buf.read(2 * n), dtype=f"{self._byteorder}i2", count=n
+            )
+            self._value_label_dict[labname] = {}
+            for i in range(n):
+                self._value_label_dict[labname][codes[i]] = self._decode(
+                    self._path_or_buf.read(8)
+                )
+
+    def _read_value_labels(self) -> None:
+        self._ensure_open()
+        if self._value_labels_read:
+            # Don't read twice
+            return
+
+        if self._format_version >= 108:
+            self._read_new_value_labels()
+        else:
+            self._read_old_value_labels()
         self._value_labels_read = True
 
     def _read_strls(self) -> None:
@@ -1666,8 +1675,6 @@ the string values returned are correct."""
         # StopIteration.  If reading the whole thing return an empty
         # data frame.
         if (self._nobs == 0) and nrows == 0:
-            self._can_read_value_labels = True
-            self._data_read = True
             data = DataFrame(columns=self._varlist)
             # Apply dtypes correctly
             for i, col in enumerate(data.columns):
@@ -1680,7 +1687,6 @@ the string values returned are correct."""
             return data
 
         if (self._format_version >= 117) and (not self._value_labels_read):
-            self._can_read_value_labels = True
             self._read_strls()
 
         # Read data
@@ -1703,9 +1709,7 @@ the string values returned are correct."""
         )
 
         self._lines_read += read_lines
-        if self._lines_read == self._nobs:
-            self._can_read_value_labels = True
-            self._data_read = True
+
         # if necessary, swap the byte order to native here
         if self._byteorder != self._native_byteorder:
             raw_data = raw_data.byteswap().view(raw_data.dtype.newbyteorder())
@@ -1753,7 +1757,7 @@ the string values returned are correct."""
                         i, _stata_elapsed_date_to_datetime_vec(data.iloc[:, i], fmt)
                     )
 
-        if convert_categoricals and self._format_version > 108:
+        if convert_categoricals:
             data = self._do_convert_categoricals(
                 data, self._value_label_dict, self._lbllist, order_categoricals
             )
@@ -1852,7 +1856,7 @@ the string values returned are correct."""
             fmtlist = []
             lbllist = []
             for col in columns:
-                i = data.columns.get_loc(col)
+                i = data.columns.get_loc(col)  # type: ignore[no-untyped-call]
                 dtyplist.append(self._dtyplist[i])
                 typlist.append(self._typlist[i])
                 fmtlist.append(self._fmtlist[i])
@@ -1869,7 +1873,7 @@ the string values returned are correct."""
     def _do_convert_categoricals(
         self,
         data: DataFrame,
-        value_label_dict: dict[str, dict[float, str]],
+        value_label_dict: dict[str, dict[int, str]],
         lbllist: Sequence[str],
         order_categoricals: bool,
     ) -> DataFrame:
@@ -1955,9 +1959,12 @@ The repeated labels are:
         >>> time_stamp = pd.Timestamp(2000, 2, 29, 14, 21)
         >>> data_label = "This is a data file."
         >>> path = "/My_path/filename.dta"
-        >>> df.to_stata(path, time_stamp=time_stamp,    # doctest: +SKIP
-        ...             data_label=data_label,  # doctest: +SKIP
-        ...             version=None)  # doctest: +SKIP
+        >>> df.to_stata(
+        ...     path,
+        ...     time_stamp=time_stamp,  # doctest: +SKIP
+        ...     data_label=data_label,  # doctest: +SKIP
+        ...     version=None,
+        ... )  # doctest: +SKIP
         >>> with pd.io.stata.StataReader(path) as reader:  # doctest: +SKIP
         ...     print(reader.data_label)  # doctest: +SKIP
         This is a data file.
@@ -1987,8 +1994,12 @@ The repeated labels are:
         >>> time_stamp = pd.Timestamp(2000, 2, 29, 14, 21)
         >>> path = "/My_path/filename.dta"
         >>> variable_labels = {"col_1": "This is an example"}
-        >>> df.to_stata(path, time_stamp=time_stamp,  # doctest: +SKIP
-        ...             variable_labels=variable_labels, version=None)  # doctest: +SKIP
+        >>> df.to_stata(
+        ...     path,
+        ...     time_stamp=time_stamp,  # doctest: +SKIP
+        ...     variable_labels=variable_labels,
+        ...     version=None,
+        ... )  # doctest: +SKIP
         >>> with pd.io.stata.StataReader(path) as reader:  # doctest: +SKIP
         ...     print(reader.variable_labels())  # doctest: +SKIP
         {'index': '', 'col_1': 'This is an example', 'col_2': ''}
@@ -2000,7 +2011,7 @@ The repeated labels are:
         self._ensure_open()
         return dict(zip(self._varlist, self._variable_labels))
 
-    def value_labels(self) -> dict[str, dict[float, str]]:
+    def value_labels(self) -> dict[str, dict[int, str]]:
         """
         Return a nested dict associating each variable name to its value and label.
 
@@ -2014,8 +2025,12 @@ The repeated labels are:
         >>> time_stamp = pd.Timestamp(2000, 2, 29, 14, 21)
         >>> path = "/My_path/filename.dta"
         >>> value_labels = {"col_1": {3: "x"}}
-        >>> df.to_stata(path, time_stamp=time_stamp,  # doctest: +SKIP
-        ...             value_labels=value_labels, version=None)  # doctest: +SKIP
+        >>> df.to_stata(
+        ...     path,
+        ...     time_stamp=time_stamp,  # doctest: +SKIP
+        ...     value_labels=value_labels,
+        ...     version=None,
+        ... )  # doctest: +SKIP
         >>> with pd.io.stata.StataReader(path) as reader:  # doctest: +SKIP
         ...     print(reader.value_labels())  # doctest: +SKIP
         {'col_1': {3: 'x'}}
@@ -2161,7 +2176,7 @@ def _dtype_to_stata_type(dtype: np.dtype, column: Series) -> int:
 
 
 def _dtype_to_default_stata_fmt(
-    dtype, column: Series, dta_version: int = 114, force_strl: bool = False
+    dtype: np.dtype, column: Series, dta_version: int = 114, force_strl: bool = False
 ) -> str:
     """
     Map numpy dtype to stata's default format for this type. Not terribly
@@ -2272,19 +2287,19 @@ class StataWriter(StataParser):
 
     Examples
     --------
-    >>> data = pd.DataFrame([[1.0, 1]], columns=['a', 'b'])
-    >>> writer = StataWriter('./data_file.dta', data)
+    >>> data = pd.DataFrame([[1.0, 1]], columns=["a", "b"])
+    >>> writer = StataWriter("./data_file.dta", data)
     >>> writer.write_file()
 
     Directly write a zip file
     >>> compression = {{"method": "zip", "archive_name": "data_file.dta"}}
-    >>> writer = StataWriter('./data_file.zip', data, compression=compression)
+    >>> writer = StataWriter("./data_file.zip", data, compression=compression)
     >>> writer.write_file()
 
     Save a DataFrame with dates
     >>> from datetime import datetime
-    >>> data = pd.DataFrame([[datetime(2000,1,1)]], columns=['date'])
-    >>> writer = StataWriter('./date_data_file.dta', data, {{'date' : 'tw'}})
+    >>> data = pd.DataFrame([[datetime(2000, 1, 1)]], columns=["date"])
+    >>> writer = StataWriter("./date_data_file.dta", data, {{"date": "tw"}})
     >>> writer.write_file()
     """
 
@@ -2655,18 +2670,22 @@ supported types."""
 
         Examples
         --------
-        >>> df = pd.DataFrame({"fully_labelled": [1, 2, 3, 3, 1],
-        ...                    "partially_labelled": [1.0, 2.0, np.nan, 9.0, np.nan],
-        ...                    "Y": [7, 7, 9, 8, 10],
-        ...                    "Z": pd.Categorical(["j", "k", "l", "k", "j"]),
-        ...                    })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "fully_labelled": [1, 2, 3, 3, 1],
+        ...         "partially_labelled": [1.0, 2.0, np.nan, 9.0, np.nan],
+        ...         "Y": [7, 7, 9, 8, 10],
+        ...         "Z": pd.Categorical(["j", "k", "l", "k", "j"]),
+        ...     }
+        ... )
         >>> path = "/My_path/filename.dta"
-        >>> labels = {"fully_labelled": {1: "one", 2: "two", 3: "three"},
-        ...           "partially_labelled": {1.0: "one", 2.0: "two"},
-        ...           }
-        >>> writer = pd.io.stata.StataWriter(path,
-        ...                                  df,
-        ...                                  value_labels=labels)  # doctest: +SKIP
+        >>> labels = {
+        ...     "fully_labelled": {1: "one", 2: "two", 3: "three"},
+        ...     "partially_labelled": {1.0: "one", 2.0: "two"},
+        ... }
+        >>> writer = pd.io.stata.StataWriter(
+        ...     path, df, value_labels=labels
+        ... )  # doctest: +SKIP
         >>> writer.write_file()  # doctest: +SKIP
         >>> df = pd.read_stata(path)  # doctest: +SKIP
         >>> df  # doctest: +SKIP
@@ -2896,13 +2915,7 @@ supported types."""
         for i, col in enumerate(data):
             typ = typlist[i]
             if typ <= self._max_string_length:
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        "ignore",
-                        "Downcasting object dtype arrays",
-                        category=FutureWarning,
-                    )
-                    dc = data[col].fillna("")
+                dc = data[col].fillna("")
                 data[col] = dc.apply(_pad_bytes, args=(typ,))
                 stype = f"S{typ}"
                 dtypes[col] = stype
@@ -3226,22 +3239,24 @@ class StataWriter117(StataWriter):
 
     Examples
     --------
-    >>> data = pd.DataFrame([[1.0, 1, 'a']], columns=['a', 'b', 'c'])
-    >>> writer = pd.io.stata.StataWriter117('./data_file.dta', data)
+    >>> data = pd.DataFrame([[1.0, 1, "a"]], columns=["a", "b", "c"])
+    >>> writer = pd.io.stata.StataWriter117("./data_file.dta", data)
     >>> writer.write_file()
 
     Directly write a zip file
     >>> compression = {"method": "zip", "archive_name": "data_file.dta"}
     >>> writer = pd.io.stata.StataWriter117(
-    ...     './data_file.zip', data, compression=compression
-    ...     )
+    ...     "./data_file.zip", data, compression=compression
+    ... )
     >>> writer.write_file()
 
     Or with long strings stored in strl format
-    >>> data = pd.DataFrame([['A relatively long string'], [''], ['']],
-    ...                     columns=['strls'])
+    >>> data = pd.DataFrame(
+    ...     [["A relatively long string"], [""], [""]], columns=["strls"]
+    ... )
     >>> writer = pd.io.stata.StataWriter117(
-    ...     './data_file_with_long_strings.dta', data, convert_strl=['strls'])
+    ...     "./data_file_with_long_strings.dta", data, convert_strl=["strls"]
+    ... )
     >>> writer.write_file()
     """
 
@@ -3467,7 +3482,7 @@ class StataWriter117(StataWriter):
         self._update_map("characteristics")
         self._write_bytes(self._tag(b"", "characteristics"))
 
-    def _write_data(self, records) -> None:
+    def _write_data(self, records: np.rec.recarray) -> None:
         self._update_map("data")
         self._write_bytes(b"<data>")
         self._write_bytes(records.tobytes())
@@ -3619,21 +3634,23 @@ class StataWriterUTF8(StataWriter117):
     Using Unicode data and column names
 
     >>> from pandas.io.stata import StataWriterUTF8
-    >>> data = pd.DataFrame([[1.0, 1, 'ᴬ']], columns=['a', 'β', 'ĉ'])
-    >>> writer = StataWriterUTF8('./data_file.dta', data)
+    >>> data = pd.DataFrame([[1.0, 1, "ᴬ"]], columns=["a", "β", "ĉ"])
+    >>> writer = StataWriterUTF8("./data_file.dta", data)
     >>> writer.write_file()
 
     Directly write a zip file
     >>> compression = {"method": "zip", "archive_name": "data_file.dta"}
-    >>> writer = StataWriterUTF8('./data_file.zip', data, compression=compression)
+    >>> writer = StataWriterUTF8("./data_file.zip", data, compression=compression)
     >>> writer.write_file()
 
     Or with long strings stored in strl format
 
-    >>> data = pd.DataFrame([['ᴀ relatively long ŝtring'], [''], ['']],
-    ...                     columns=['strls'])
-    >>> writer = StataWriterUTF8('./data_file_with_long_strings.dta', data,
-    ...                          convert_strl=['strls'])
+    >>> data = pd.DataFrame(
+    ...     [["ᴀ relatively long ŝtring"], [""], [""]], columns=["strls"]
+    ... )
+    >>> writer = StataWriterUTF8(
+    ...     "./data_file_with_long_strings.dta", data, convert_strl=["strls"]
+    ... )
     >>> writer.write_file()
     """
 

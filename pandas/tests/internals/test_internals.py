@@ -196,7 +196,7 @@ def create_mgr(descr, item_shape=None):
     * components with same DTYPE_ID are combined into single block
     * to force multiple blocks with same dtype, use '-SUFFIX'::
 
-        'a:f8-1; b:f8-2; c:f8-foobar'
+        "a:f8-1; b:f8-2; c:f8-foobar"
 
     """
     if item_shape is None:
@@ -347,7 +347,7 @@ class TestBlock:
         # GH#37799
         values = np.random.default_rng(2).standard_normal((3, 4))
         blk = new_block(values, placement=BlockPlacement([3, 1, 6]), ndim=2)
-        result = blk._split()
+        result = list(blk._split())
 
         # check that we get views, not copies
         values[:] = -9999
@@ -612,7 +612,7 @@ class TestBlockManager:
 
         # noops
         mgr = create_mgr("f: i8; g: f8")
-        new_mgr = mgr.convert(copy=True)
+        new_mgr = mgr.convert()
         _compare(mgr, new_mgr)
 
         # convert
@@ -620,7 +620,7 @@ class TestBlockManager:
         mgr.iset(0, np.array(["1"] * N, dtype=np.object_))
         mgr.iset(1, np.array(["2."] * N, dtype=np.object_))
         mgr.iset(2, np.array(["foo."] * N, dtype=np.object_))
-        new_mgr = mgr.convert(copy=True)
+        new_mgr = mgr.convert()
         dtype = "string[pyarrow_numpy]" if using_infer_string else np.object_
         assert new_mgr.iget(0).dtype == dtype
         assert new_mgr.iget(1).dtype == dtype
@@ -634,7 +634,7 @@ class TestBlockManager:
         mgr.iset(0, np.array(["1"] * N, dtype=np.object_))
         mgr.iset(1, np.array(["2."] * N, dtype=np.object_))
         mgr.iset(2, np.array(["foo."] * N, dtype=np.object_))
-        new_mgr = mgr.convert(copy=True)
+        new_mgr = mgr.convert()
         assert new_mgr.iget(0).dtype == dtype
         assert new_mgr.iget(1).dtype == dtype
         assert new_mgr.iget(2).dtype == dtype
@@ -753,7 +753,7 @@ class TestBlockManager:
             mgr.iget(3).internal_values(), reindexed.iget(3).internal_values()
         )
 
-    def test_get_numeric_data(self, using_copy_on_write):
+    def test_get_numeric_data(self):
         mgr = create_mgr(
             "int: int; float: float; complex: complex;"
             "str: object; bool: bool; obj: object; dt: datetime",
@@ -774,18 +774,12 @@ class TestBlockManager:
             np.array([100.0, 200.0, 300.0]),
             inplace=True,
         )
-        if using_copy_on_write:
-            tm.assert_almost_equal(
-                mgr.iget(mgr.items.get_loc("float")).internal_values(),
-                np.array([1.0, 1.0, 1.0]),
-            )
-        else:
-            tm.assert_almost_equal(
-                mgr.iget(mgr.items.get_loc("float")).internal_values(),
-                np.array([100.0, 200.0, 300.0]),
-            )
+        tm.assert_almost_equal(
+            mgr.iget(mgr.items.get_loc("float")).internal_values(),
+            np.array([1.0, 1.0, 1.0]),
+        )
 
-    def test_get_bool_data(self, using_copy_on_write):
+    def test_get_bool_data(self):
         mgr = create_mgr(
             "int: int; float: float; complex: complex;"
             "str: object; bool: bool; obj: object; dt: datetime",
@@ -801,16 +795,10 @@ class TestBlockManager:
         )
 
         bools.iset(0, np.array([True, False, True]), inplace=True)
-        if using_copy_on_write:
-            tm.assert_numpy_array_equal(
-                mgr.iget(mgr.items.get_loc("bool")).internal_values(),
-                np.array([True, True, True]),
-            )
-        else:
-            tm.assert_numpy_array_equal(
-                mgr.iget(mgr.items.get_loc("bool")).internal_values(),
-                np.array([True, False, True]),
-            )
+        tm.assert_numpy_array_equal(
+            mgr.iget(mgr.items.get_loc("bool")).internal_values(),
+            np.array([True, True, True]),
+        )
 
     def test_unicode_repr_doesnt_raise(self):
         repr(create_mgr("b,\u05d0: object"))
@@ -1292,19 +1280,20 @@ class TestCanHoldElement:
         # `elem` to not have the same length as `arr`
         ii2 = IntervalIndex.from_breaks(arr[:-1], closed="neither")
         elem = element(ii2)
-        with tm.assert_produces_warning(FutureWarning):
+        msg = "Setting an item of incompatible dtype is deprecated"
+        with tm.assert_produces_warning(FutureWarning, match=msg):
             self.check_series_setitem(elem, ii, False)
         assert not blk._can_hold_element(elem)
 
         ii3 = IntervalIndex.from_breaks([Timestamp(1), Timestamp(3), Timestamp(4)])
         elem = element(ii3)
-        with tm.assert_produces_warning(FutureWarning):
+        with tm.assert_produces_warning(FutureWarning, match=msg):
             self.check_series_setitem(elem, ii, False)
         assert not blk._can_hold_element(elem)
 
         ii4 = IntervalIndex.from_breaks([Timedelta(1), Timedelta(3), Timedelta(4)])
         elem = element(ii4)
-        with tm.assert_produces_warning(FutureWarning):
+        with tm.assert_produces_warning(FutureWarning, match=msg):
             self.check_series_setitem(elem, ii, False)
         assert not blk._can_hold_element(elem)
 
@@ -1324,12 +1313,13 @@ class TestCanHoldElement:
         # `elem` to not have the same length as `arr`
         pi2 = pi.asfreq("D")[:-1]
         elem = element(pi2)
-        with tm.assert_produces_warning(FutureWarning):
+        msg = "Setting an item of incompatible dtype is deprecated"
+        with tm.assert_produces_warning(FutureWarning, match=msg):
             self.check_series_setitem(elem, pi, False)
 
         dti = pi.to_timestamp("s")[:-1]
         elem = element(dti)
-        with tm.assert_produces_warning(FutureWarning):
+        with tm.assert_produces_warning(FutureWarning, match=msg):
             self.check_series_setitem(elem, pi, False)
 
     def check_can_hold_element(self, obj, elem, inplace: bool):

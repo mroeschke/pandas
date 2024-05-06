@@ -93,7 +93,14 @@ if TYPE_CHECKING:
         npt,
     )
 
-    from pandas import Series
+    from pandas import (
+        Index,
+        Series,
+    )
+
+
+def holds_integer(column: Index) -> bool:
+    return column.inferred_type in {"integer", "mixed-integer"}
 
 
 def _color_in_style(style: str) -> bool:
@@ -290,7 +297,7 @@ class MPLPlot(ABC):
     def _validate_sharex(sharex: bool | None, ax, by) -> bool:
         if sharex is None:
             # if by is defined, subplots are used and sharex should be False
-            if ax is None and by is None:  # pylint: disable=simplifiable-if-statement
+            if ax is None and by is None:
                 sharex = True
             else:
                 # if we get an axis, the users should do the visibility
@@ -465,7 +472,7 @@ class MPLPlot(ABC):
     @final
     @staticmethod
     def _iter_data(
-        data: DataFrame | dict[Hashable, Series | DataFrame]
+        data: DataFrame | dict[Hashable, Series | DataFrame],
     ) -> Iterator[tuple[Hashable, np.ndarray]]:
         for col, values in data.items():
             # This was originally written to use values.values before EAs
@@ -671,7 +678,7 @@ class MPLPlot(ABC):
 
         # GH16953, infer_objects is needed as fallback, for ``Series``
         # with ``dtype == object``
-        data = data.infer_objects(copy=False)
+        data = data.infer_objects()
         include_type = [np.number, "datetime", "datetimetz", "timedelta"]
 
         # GH23719, allow plotting boolean
@@ -1246,9 +1253,9 @@ class PlanePlot(MPLPlot, ABC):
         MPLPlot.__init__(self, data, **kwargs)
         if x is None or y is None:
             raise ValueError(self._kind + " requires an x and y column")
-        if is_integer(x) and not self.data.columns._holds_integer():
+        if is_integer(x) and not holds_integer(self.data.columns):
             x = self.data.columns[x]
-        if is_integer(y) and not self.data.columns._holds_integer():
+        if is_integer(y) and not holds_integer(self.data.columns):
             y = self.data.columns[y]
 
         self.x = x
@@ -1318,7 +1325,7 @@ class ScatterPlot(PlanePlot):
         self.norm = norm
 
         super().__init__(data, x, y, **kwargs)
-        if is_integer(c) and not self.data.columns._holds_integer():
+        if is_integer(c) and not holds_integer(self.data.columns):
             c = self.data.columns[c]
         self.c = c
 
@@ -1434,7 +1441,7 @@ class HexBinPlot(PlanePlot):
 
     def __init__(self, data, x, y, C=None, *, colorbar: bool = True, **kwargs) -> None:
         super().__init__(data, x, y, **kwargs)
-        if is_integer(C) and not self.data.columns._holds_integer():
+        if is_integer(C) and not holds_integer(self.data.columns):
             C = self.data.columns[C]
         self.C = C
 
@@ -1718,13 +1725,7 @@ class AreaPlot(LinePlot):
 
     def __init__(self, data, **kwargs) -> None:
         kwargs.setdefault("stacked", True)
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                "Downcasting object dtype arrays",
-                category=FutureWarning,
-            )
-            data = data.fillna(value=0)
+        data = data.fillna(value=0)
         LinePlot.__init__(self, data, **kwargs)
 
         if not self.stacked:
@@ -2076,9 +2077,6 @@ class PiePlot(MPLPlot):
 
         for i, (label, y) in enumerate(self._iter_data(data=self.data)):
             ax = self._get_ax(i)
-            if label is not None:
-                label = pprint_thing(label)
-                ax.set_ylabel(label)
 
             kwds = self.kwds.copy()
 
